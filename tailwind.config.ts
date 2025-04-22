@@ -6,6 +6,9 @@ const config: Config = {
     ],
     theme: {
         extend: {
+            colors: {
+                primaryPurple:"#420092",
+            },
             fontFamily: {
                 jakarta: ['"Plus jakarta sans"', 'sans-serif']
             },
