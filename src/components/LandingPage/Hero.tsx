@@ -6,7 +6,7 @@ import Hero_Image from "../../assets/hero_image.png";
 
 const Hero = () => {
   return (
-    <div className="w-full  grid grid-cols-2 gap-[1.111vw] ">
+    <div className="w-full grid grid-cols-2 gap-[1.111vw] ">
       <div className="grid grid-rows-7  w-full text-black font-jakarta">
         <div className="row-span-4 p-4 text-purple-100 w-full"></div>
         <div className="row-span-3 flex flex-col gap-y-[0.667vw] w-full bg-white text-[#420092]">
