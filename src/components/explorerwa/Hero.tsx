@@ -44,7 +44,12 @@ const Hero = ({ sections }: HeroProps) => {
 
   // Fungsi searching
   const handleSearch = () => {
-    console.log("Mencari:", searchKeyword);
+    console.log("Searching:", searchKeyword);
+  };
+
+  // Function to handle "Deploy" button click
+  const handleDeploy = (assetType: string) => {
+    router.push(`/deploy/${assetType}`);
   };
 
   return (
@@ -123,7 +128,7 @@ const Hero = ({ sections }: HeroProps) => {
                         variant="secondary"
                         size="custom"
                         customClass="w-full py-[0.4vw] text-[0.9vw] border-[0.5px]"
-                        onClick={() => router.push("/deploy")}
+                        onClick={() => handleDeploy(card.title)}
                       />
                     </div>
                   </div>
