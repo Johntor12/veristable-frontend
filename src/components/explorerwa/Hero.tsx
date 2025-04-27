@@ -49,8 +49,8 @@ const Hero = ({ sections }: HeroProps) => {
 
   // Function to handle "Deploy" button click
   const handleDeploy = (assetType: string) => {
-    router.push(`/deploy/${assetType}`);
-  };
+    router.push(`/deploy/${assetType.replace(/\s/g, '')}`);
+  };  
 
   return (
     <div className="min-h-screen bg-white pt-[6vw] px-4 lg:px-0 font-jakarta ml-[1vw]">
