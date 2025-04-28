@@ -1,8 +1,8 @@
 import { useMemo } from "react";
 
 type ButtonProps = {
-  variant?: "primary" | "secondary";
-  size?: "sm" | "md" | "lg";
+  variant?: "primary" | "secondary" | "custom";
+  size?: "sm" | "md" | "lg" | "custom";
   text?: string;
   fullW?: boolean;
   disabled?: boolean;
@@ -42,10 +42,12 @@ export default function Button({
         return "px-[30px] py-[16px]";
       case "lg":
         return "px-12 py-4";
+        case "custom":
+          return customClass; // <--- biar customClass doang yang dipakai
       default:
         return "";
     }
-  }, [size]);
+  }, [size, customClass]);
 
   const buttonClasses = useMemo(() => {
     return `${btnVariant} ${btnSize} ${customClass}`.trim();
