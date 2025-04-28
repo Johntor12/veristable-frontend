@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import ProjectRecent from "@/components/MyRWA/ProjectRecent";
 import AllTeams from "@/components/MyRWA/AllTeams";
 import HeroRWA from "@/components/MyRWA/Hero";
+import AfterDeploy from "@/components/MyRWA/AfterDeploy";
 
 // Tipe untuk Card dan Section
 type Card = {
@@ -96,6 +97,7 @@ const MyRWA = ({ sections }: HeroProps) => {
         <ProjectRecent />
         <ProjectRecent titleSection="Project Recently Added" descSection="The latest RWA projects you've onboarded — ready to verify, tokenize, and go live" />
         <AllTeams />
+        <AfterDeploy  />
       </section>
 
     </div>
