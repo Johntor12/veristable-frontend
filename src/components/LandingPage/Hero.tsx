@@ -36,10 +36,10 @@ const Hero = () => {
           </div>
         </div>
       </div>
-      <div className="bg-[#100FF1] w-full">
+      <div className="w-full flex justify-center items-end">
         <Image
           src={Hero_Image}
-          width={552}
+          sizes={"38.333vw"}
           className="aspect-[552/440]"
           alt="Hero Image"
         />
