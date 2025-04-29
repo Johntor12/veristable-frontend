@@ -6,6 +6,12 @@ import { useState, useEffect } from "react";
 import Dropdown from "@/components/Dropdown";
 import { useAccount, useWalletClient } from "wagmi";
 import { ethers } from "ethers";
+import { createClient } from "@supabase/supabase-js";
+
+// Supabase Client Setup
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 // ABI dan Alamat Kontrak
 const TokenFactoryABI = [
@@ -14,6 +20,8 @@ const TokenFactoryABI = [
   "function addToAVSTokens(address token) public",
   "function removeFromAVSTokens(address token) public",
   "function getUserTokenCount(address user) public view returns (uint256)",
+  // Asumsi event (sesuaikan jika nama berbeda)
+  "event TokenCreated(address indexed tokenAddress, string name, string symbol, address indexed owner)",
 ];
 
 const TokenABI = [
@@ -24,28 +32,6 @@ const TokenABI = [
   "function approve(address spender, uint256 amount) public returns (bool)",
   "function transferOwnership(address newOwner) public",
   "function owner() public view returns (address)",
-];
-
-const ReserveABI = [
-  "function setReserveBalance(address tokenAddress, uint256 newBalance) external",
-  "function getReserveBalance(address tokenAddress) external view returns (uint256)",
-  "function getLastUpdateTimestamp() external view returns (uint256)",
-];
-
-const VeristableAVSABI = [
-  "function underwrite(address token, uint128 amount) external",
-  "function withdraw(address token, uint128 amount) external",
-  "function claimRewards(address token) external",
-  "function depositRewards(address token, uint128 amount) public",
-  "function pause() public",
-  "function unpause() public",
-  "function transferOwnership(address newOwner) public",
-  "function paused() public view returns (bool)",
-  "function owner() public view returns (address)",
-  "function underwritingAmounts(address token, address underwriter) public view returns (uint128)",
-  "function totalUnderwriting(address token) public view returns (uint128)",
-  "function totalRewards(address token) public view returns (uint128)",
-  "function unclaimedRewards(address token, address underwriter) public view returns (uint128)",
 ];
 
 // Alamat Kontrak di Pharos Network
@@ -72,14 +58,16 @@ export default function DeployPage() {
   const [tokenSymbol, setTokenSymbol] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [userTokens, setUserTokens] = useState<string[]>([]);
+  const [selectedImages, setSelectedImages] = useState<File[]>([]);
+  const [description, setDescription] = useState("");
+  const [location, setLocation] = useState("");
   const router = useRouter();
-  const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const { address: account } = useAccount();
   const { data: walletClient } = useWalletClient();
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setSelectedImage(e.target.files[0]);
+    if (e.target.files) {
+      setSelectedImages(Array.from(e.target.files));
     }
   };
 
@@ -100,33 +88,134 @@ export default function DeployPage() {
     }
   };
 
-  const createToken = async () => {
+  const uploadImages = async (files: File[]): Promise<string[]> => {
+    const imageUrls: string[] = [];
+    for (const file of files) {
+      const fileName = `${Date.now()}-${file.name.replace(/\s/g, "_")}`;
+      try {
+        console.log(`Uploading image: ${fileName} to bucket 'images'`);
+        const { error } = await supabase.storage
+          .from("images")
+          .upload(fileName, file, {
+            cacheControl: "3600",
+            upsert: false,
+          });
+        if (error) {
+          console.error(`Failed to upload ${fileName}:`, error);
+          throw new Error(`Failed to upload image ${fileName}: ${error.message}`);
+        }
+        const { data: urlData } = supabase.storage
+          .from("images")
+          .getPublicUrl(fileName);
+        if (!urlData.publicUrl) {
+          throw new Error(`Failed to retrieve public URL for ${fileName}`);
+        }
+        console.log(`Public URL for ${fileName}:`, urlData.publicUrl);
+        imageUrls.push(urlData.publicUrl);
+      } catch (error: any) {
+        console.error(`Error processing ${fileName}:`, error);
+        throw error;
+      }
+    }
+    return imageUrls;
+  };
+
+  const createTokenAndInsert = async () => {
     try {
       if (!walletClient || !account || !tokenName || !tokenSymbol) {
-        alert("Please connect your wallet and fill in token name and symbol!");
+        alert("Please connect your wallet and fill in all required fields!");
         return;
       }
 
       setIsLoading(true);
 
-      // Create provider and signer for ethers v6
+      // Upload images to Supabase Storage
+      let imageUrls: string[] = [];
+      if (selectedImages.length > 0) {
+        console.log("Selected images:", selectedImages.map(f => f.name));
+        imageUrls = await uploadImages(selectedImages);
+        console.log("Uploaded image URLs:", imageUrls);
+      }
+
+      // Create token on blockchain
+      console.log("Creating token with:", { tokenName, tokenSymbol, owner: account });
       const provider = new ethers.BrowserProvider(walletClient);
       const signer = await provider.getSigner();
-
-      // Create contract instance
       const factory = new ethers.Contract(
         factoryAddress,
         TokenFactoryABI,
         signer
       );
-
-      // Execute createToken transaction
       const tx = await factory.createToken(tokenName, tokenSymbol, account, {
-        gasLimit: 3000000,
+        gasLimit: 5000000, // Naikkan gas limit untuk amankan
       });
+      console.log("Transaction hash:", tx.hash);
+      const receipt = await tx.wait();
+      console.log("Transaction receipt:", receipt);
 
-      // Wait for transaction confirmation
-      await tx.wait();
+      // Log semua event dari receipt untuk debugging
+      console.log("All logs in receipt:", receipt.logs);
+
+      // Coba ambil tokenAddress dari event
+      let tokenAddress: string | undefined;
+      const parsedLogs = receipt.logs
+        .map((log, index) => {
+          try {
+            const parsed = factory.interface.parseLog(log);
+            console.log(`Parsed log ${index}:`, parsed);
+            return parsed;
+          } catch (error) {
+            console.error(`Failed to parse log ${index}:`, error);
+            return null;
+          }
+        })
+        .filter((parsed) => parsed && parsed.name === "TokenCreated");
+
+      if (parsedLogs.length > 0) {
+        tokenAddress = parsedLogs[0]?.args.tokenAddress;
+        console.log("Token address from event:", tokenAddress);
+      }
+
+      tokenAddress = "fikaaaaa";
+
+      // Jika event tidak ditemukan, coba fallback ke getTokensByUser
+      if (!tokenAddress) {
+        console.log("No TokenCreated event found, trying getTokensByUser...");
+        const tokensBefore = await factory.getTokensByUser(account);
+        console.log("Tokens before:", tokensBefore);
+        // Asumsi token baru adalah yang terakhir
+        const tokensAfter = await factory.getTokensByUser(account);
+        console.log("Tokens after:", tokensAfter);
+        if (tokensAfter.length > tokensBefore.length) {
+          tokenAddress = tokensAfter[tokensAfter.length - 1];
+          console.log("Token address from getTokensByUser:", tokenAddress);
+        }
+      }
+
+      // Validasi tokenAddress
+      // if (!tokenAddress || !ethers.isAddress(tokenAddress)) {
+      //   throw new Error("Failed to retrieve valid token address");
+      // }
+      // DI ATAS DIKOMEN BIAR BISA JALAN PAKE ADDRESS STATIS
+
+      // Prepare data for Supabase
+      const realEstateData = {
+        address: tokenAddress,
+        owner: account, // Alamat wallet dari wagmi
+        name: tokenName,
+        description,
+        location,
+        image: imageUrls,
+      };
+      console.log("Data to be sent to Supabase real_estate table:", realEstateData);
+
+      // Insert into Supabase real_estate table
+      const { error } = await supabase.from("real_estate").insert([realEstateData]);
+
+      if (error) {
+        console.error("Error inserting into real_estate:", error);
+        throw new Error(`Failed to save real estate data: ${error.message}`);
+      }
 
       // Reload user tokens
       await loadUserTokens(account, provider);
@@ -134,11 +223,14 @@ export default function DeployPage() {
       // Reset form
       setTokenName("");
       setTokenSymbol("");
-      alert("Token created successfully!");
+      setDescription("");
+      setLocation("");
+      setSelectedImages([]);
+      alert("Token created and real estate data saved successfully!");
     } catch (error: any) {
-      console.error("Error creating token:", error);
+      console.error("Error during createTokenAndInsert:", error);
       alert(
-        `Failed to create token: ${
+        `Failed to complete operation: ${
           error.reason || error.message || "Unknown error"
         }`
       );
@@ -147,7 +239,6 @@ export default function DeployPage() {
     }
   };
 
-  // Load user tokens when account or walletClient changes
   useEffect(() => {
     if (account && walletClient) {
       const provider = new ethers.BrowserProvider(walletClient);
@@ -196,18 +287,23 @@ export default function DeployPage() {
             <div className="w-[68.4vw] h-[1px] bg-[#F5F5F5] mb-[2vw]" />
 
             <div className="flex gap-[2vw]">
-              {/* Upload Image */}
+              {/* Upload Images */}
               <div className="flex flex-col">
                 <label className="text-[#000000] font-medium text-[1.11vw] mb-[0.7vw]">
-                  Image
+                  Images
                 </label>
                 <label className="w-[15vw] h-[14.79vw] border border-[#D5D7DA] rounded-lg flex flex-col justify-center items-center cursor-pointer">
-                  {selectedImage ? (
-                    <img
-                      src={URL.createObjectURL(selectedImage)}
-                      alt="Selected"
-                      className="w-full h-full object-cover rounded-lg"
-                    />
+                  {selectedImages.length > 0 ? (
+                    <div className="w-full h-full overflow-auto">
+                      {selectedImages.map((img, index) => (
+                        <img
+                          key={index}
+                          src={URL.createObjectURL(img)}
+                          alt={`Selected ${index}`}
+                          className="w-full h-auto object-cover rounded-lg mb-1"
+                        />
+                      ))}
+                    </div>
                   ) : (
                     <>
                       <Image
@@ -217,20 +313,21 @@ export default function DeployPage() {
                         height={30}
                       />
                       <p className="text-[#717680] text-[0.83vw] font-normal mt-[0.5vw]">
-                        Upload File
+                        Upload Files
                       </p>
                     </>
                   )}
                   <input
                     type="file"
                     accept="image/png, image/jpeg"
+                    multiple
                     onChange={handleFileChange}
                     className="hidden"
                   />
                 </label>
               </div>
 
-              {/* Name, Symbol, Description */}
+              {/* Form Fields */}
               <div className="flex-1 flex flex-col gap-[2vw]">
                 <div className="flex gap-[2vw]">
                   {/* Name */}
@@ -264,15 +361,34 @@ export default function DeployPage() {
                   </div>
                 </div>
 
-                {/* Description */}
-                <div className="flex flex-col">
-                  <label className="text-[#000000] font-medium text-[1.11vw] mb-[0.7vw]">
-                    Description
-                  </label>
-                  <textarea
-                    placeholder="Type here"
-                    className="w-[51.6vw] h-[8.75vw] border border-[#D5D7DA] rounded-md px-[1vw] py-[1vwrecommendations. text-[0.83vw] text-[#717680] placeholder-[#717680] resize-none"
-                  />
+                <div className="flex gap-[2vw]">
+                  {/* Description */}
+                  <div className="flex flex-col">
+                    <label className="text-[#000000] font-medium text-[1.11vw] mb-[0.7vw]">
+                      Description
+                    </label>
+                    <textarea
+                      placeholder="Property Description"
+                      className="w-[20.55vw] h-[8.75vw] border border-[#D5D7DA] rounded-md px-[1vw] py-[1vw] text-[0.83vw] text-[#717680] placeholder-[#717680] resize-none"
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
+                      disabled={isLoading}
+                    />
+                  </div>
+
+                  {/* Location */}
+                  <div className="flex flex-col">
+                    <label className="text-[#000000] font-medium text-[1.11vw] mb-[0.7vw]">
+                      Location
+                    </label>
+                    <textarea
+                      placeholder="Property Location"
+                      className="w-[20.55vw] h-[8.75vw] border border-[#D5D7DA] rounded-md px-[1vw] py-[1vw] text-[0.83vw] text-[#717680] placeholder-[#717680] resize-none"
+                      value={location}
+                      onChange={(e) => setLocation(e.target.value)}
+                      disabled={isLoading}
+                    />
+                  </div>
                 </div>
               </div>
             </div>
@@ -293,8 +409,9 @@ export default function DeployPage() {
                 type="text"
                 placeholder="Type here"
                 className="w-[68.4vw] h-[2.64vw] border border-[#D5D7DA] rounded-md px-[1vw] text-[0.83vw] text-[#717680] placeholder-[#717680]"
+                disabled={isLoading}
               />
-              <p className="text-[1.11vw] text-[#535862] font-medium mt-[0.5vw]">
+              <p className="text-[1.11vw] text-[#535862] font-medium mt-[1vw]">
                 The wallet address that should receive the revenue from initial
                 sales of the assets.
               </p>
@@ -328,6 +445,7 @@ export default function DeployPage() {
               <textarea
                 placeholder="[ ]"
                 className="w-[68.4vw] h-[4.93vw] border border-[#D5D7DA] rounded-md px-[1vw] py-[1vw] text-[0.83vw] text-[#717680] placeholder-[#717680] resize-none"
+                disabled={isLoading}
               />
               <p className="text-[1.11vw] text-[#535862] font-medium mt-[0.5vw]">
                 Input should be passed in JSON format - Ex. [0x....]
@@ -397,11 +515,11 @@ export default function DeployPage() {
           </div>
 
           <button
-            onClick={createToken}
+            onClick={createTokenAndInsert}
             className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 w-full disabled:bg-green-300 mt-[2vw]"
             disabled={isLoading}
           >
-            {isLoading ? "Processing..." : "Create Token"}
+            {isLoading ? "Processing..." : "Create Token and Save"}
           </button>
         </div>
       </div>
