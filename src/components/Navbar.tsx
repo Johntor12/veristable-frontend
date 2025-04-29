@@ -3,6 +3,7 @@
 import Logo from "../assets/Logo_Veristable.png";
 import Image from "next/image";
 import Button from "./Button";
+import { ConnectButton } from "@rainbow-me/rainbowkit";
 
 const Navbar = () => {
   return (
@@ -18,7 +19,7 @@ const Navbar = () => {
             />
             <p className="font-jakarta text-[1.25vw] font-bold">Veristable</p>
           </div>
-          <div className="grid grid-cols-13 justify-items-end  items-center h-full gap-[2.667vw] text-black">
+          <div className="grid grid-cols-13 justify-items-end items-center h-full gap-[2.667vw] text-black">
             <p className="col-span-3 font-jakarta text-[1.111vw]">ExploreRWA</p>
             <p className="col-span-3 font-jakarta text-[1.111vw]">MyRWA</p>
             <p className="col-span-3 font-jakarta text-[1.111vw]">Dashboard</p>
@@ -26,6 +27,7 @@ const Navbar = () => {
               text="Login"
               customClass="col-span-4 text-[1.111vw] font-jakarta rounded-[0.694vw] h-10"
             />
+            <ConnectButton />
           </div>
         </div>
       </div>
