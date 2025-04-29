@@ -7,6 +7,7 @@ import RegisteredOperators from "./RegisteredOperators";
 import TokenCard from "./TokenCard";
 import AnalyticsCard from "./AnalyticsCard";
 import TeamCard from "./TeamCard";
+import TokenPopup from "./TokenPopup";
 
 type AfterDeployProps = {
   contractAddress?: string;
