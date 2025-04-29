@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import Image from "next/image";
 import Button from "@/components/Button";
@@ -8,6 +8,8 @@ import ProjectRecent from "@/components/MyRWA/ProjectRecent";
 import AllTeams from "@/components/MyRWA/AllTeams";
 import HeroRWA from "@/components/MyRWA/Hero";
 import AfterDeploy from "@/components/MyRWA/AfterDeploy";
+import TokenCard from "@/components/MyRWA/TokenCard";
+import AnalyticsCard from "@/components/MyRWA/AnalyticsCard";
 
 // Tipe untuk Card dan Section
 type Card = {
@@ -28,36 +30,84 @@ type HeroProps = {
 };
 
 const realEstateData = {
-    sections: [
-      {
-        heading: "Popular",
-        caption: "Discover the most in-demand Real World Assets in the market — highly trusted and widely adopted by users.",
-        cards: [
-          { badge: "Audited", title: "Real Estate", description: "Long-term value from physical properties.", by: "companyA" },
-          { badge: "Audited", title: "Carbon Credits", description: "Earn from verified climate projects", by: "companyB" },
-          { badge: "Audited", title: "Commodities", description: "Trade real assets like gold and oil", by: "companyC" },
-        ],
-      },
-      {
-        heading: "Trending This Week",
-        caption: "Check out what's gaining attention this week — assets that are attracting the most user activity",
-        cards: [
-          { badge: "Audited", title: "Real Estate", description: "Long-term value from physical properties.", by: "companyA" },
-          { badge: "Audited", title: "Carbon Credits", description: "Earn from verified climate projects", by: "companyB" },
-          { badge: "Audited", title: "Commodities", description: "Trade real assets like gold and oil", by: "companyC" },
-        ],
-      },
-      {
-        heading: "Recommendation",
-        caption: "Curated assets tailored to your profile and market trends. Discover smart picks to grow and diversify your portfolio.",
-        cards: [
-          { badge: "Audited", title: "Real Estate", description: "Long-term value from physical properties.", by: "companyA" },
-          { badge: "Audited", title: "Carbon Credits", description: "Earn from verified climate projects", by: "companyB" },
-          { badge: "Audited", title: "Commodities", description: "Trade real assets like gold and oil", by: "companyC" },
-        ],
-      },
-    ]
-}
+  sections: [
+    {
+      heading: "Popular",
+      caption:
+        "Discover the most in-demand Real World Assets in the market — highly trusted and widely adopted by users.",
+      cards: [
+        {
+          badge: "Audited",
+          title: "Real Estate",
+          description: "Long-term value from physical properties.",
+          by: "companyA",
+        },
+        {
+          badge: "Audited",
+          title: "Carbon Credits",
+          description: "Earn from verified climate projects",
+          by: "companyB",
+        },
+        {
+          badge: "Audited",
+          title: "Commodities",
+          description: "Trade real assets like gold and oil",
+          by: "companyC",
+        },
+      ],
+    },
+    {
+      heading: "Trending This Week",
+      caption:
+        "Check out what's gaining attention this week — assets that are attracting the most user activity",
+      cards: [
+        {
+          badge: "Audited",
+          title: "Real Estate",
+          description: "Long-term value from physical properties.",
+          by: "companyA",
+        },
+        {
+          badge: "Audited",
+          title: "Carbon Credits",
+          description: "Earn from verified climate projects",
+          by: "companyB",
+        },
+        {
+          badge: "Audited",
+          title: "Commodities",
+          description: "Trade real assets like gold and oil",
+          by: "companyC",
+        },
+      ],
+    },
+    {
+      heading: "Recommendation",
+      caption:
+        "Curated assets tailored to your profile and market trends. Discover smart picks to grow and diversify your portfolio.",
+      cards: [
+        {
+          badge: "Audited",
+          title: "Real Estate",
+          description: "Long-term value from physical properties.",
+          by: "companyA",
+        },
+        {
+          badge: "Audited",
+          title: "Carbon Credits",
+          description: "Earn from verified climate projects",
+          by: "companyB",
+        },
+        {
+          badge: "Audited",
+          title: "Commodities",
+          description: "Trade real assets like gold and oil",
+          by: "companyC",
+        },
+      ],
+    },
+  ],
+};
 
 const MyRWA = ({ sections }: HeroProps) => {
   const router = useRouter();
@@ -85,8 +135,8 @@ const MyRWA = ({ sections }: HeroProps) => {
 
   // Function to handle "Deploy" button click
   const handleDeploy = (assetType: string) => {
-    router.push(`/deploy/${assetType.replace(/\s/g, '')}`);
-  };  
+    router.push(`/deploy/${assetType.replace(/\s/g, "")}`);
+  };
 
   return (
     <div className="min-h-screen bg-white pt-[6vw] px-4 lg:px-0 font-jakarta ml-[1vw]">
@@ -95,11 +145,12 @@ const MyRWA = ({ sections }: HeroProps) => {
         <HeroRWA />
 
         <ProjectRecent />
-        <ProjectRecent titleSection="Project Recently Added" descSection="The latest RWA projects you've onboarded — ready to verify, tokenize, and go live" />
-        <AllTeams />
-        <AfterDeploy  />
+        <ProjectRecent
+          titleSection="Project Recently Added"
+          descSection="The latest RWA projects you've onboarded — ready to verify, tokenize, and go live"
+        />
+        <AfterDeploy />
       </section>
-
     </div>
   );
 };

@@ -8,7 +8,7 @@ const Navbar = () => {
   return (
     <div className="relative">
       <div className="absolute flex flex-row w-full h-[4.667vw] justify-center items-center font-jakarta">
-        <div className="flex flex-row justify-between items-center w-[90%] h-10">
+        <div className="flex flex-row justify-between items-center w-[90vw] h-10">
           <div className="flex flex-row items-center h-full text-black">
             <Image
               src={Logo}
