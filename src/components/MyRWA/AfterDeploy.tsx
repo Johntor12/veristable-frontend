@@ -4,13 +4,24 @@ import { IoMdCopy, IoIosOpen } from "react-icons/io";
 import { HiCheck } from "react-icons/hi";
 import { useState, useMemo } from "react";
 import RegisteredOperators from "./RegisteredOperators";
+import TokenCard from "./TokenCard";
+import AnalyticsCard from "./AnalyticsCard";
+import TeamCard from "./TeamCard";
 
-const SmartContractAddress = () => {
+type AfterDeployProps = {
+  contractAddress?: string;
+};
+
+const SmartContractAddress = ({
+  contractAddress = "0x123",
+}: {
+  contractAddress: string;
+}) => {
   return (
     <button className="flex flex-row gap-[0.333vw] hover:cursor-pointer active:cursor-pointer border-1 border-[#D5D7DA] rounded-[0.208vw] w-[10.833vw] aspect-[156/36] justify-center items-center">
       <IoMdCopy className="w-[1.25vw] aspect-square text-[#C5C4C8]" />
       <p className="text-center text-[#0A0D12] font-jakarta text-[#0A0D12] text-[0.833vw]">
-        0x12345.....987654
+        {contractAddress.slice(0, 6)}.....{contractAddress.slice(-6)}
       </p>
     </button>
   );
@@ -26,8 +37,21 @@ const SmartContractInformation = () => {
     </button>
   );
 };
+  return (
+    <button className="flex flex-row gap-[0.333vw] px-[0.667vw] hover:cursor-pointer active:cursor-pointer border-1 border-[#D5D7DA] rounded-[0.208vw] w-[10.833vw] aspect-[156/36] justify-between items-center">
+      <p className="text-center text-[#0A0D12] font-jakarta text-[#0A0D12] text-[0.833vw] leading-[1.25vw] bg">
+        Gak Tau ini apa
+      </p>
+      <IoIosOpen className="w-[1.25vw] aspect-square text-[#0A0D12]" />
+    </button>
+  );
+};
 
-const RWAInformation = () => {
+const RWAInformation = ({
+  contractAddress = "0x123",
+}: {
+  contractAddress: string;
+}) => {
   return (
     <div className="flex flex-row w-[49.722vw] aspect-[716/100] gap-[1.111vw]">
       <div className="relative w-[6.994vw] aspect-[150/100]">
@@ -38,7 +62,7 @@ const RWAInformation = () => {
           Fresh Bali Villa
         </p>
         <div className="flex flex-row gap-[0.667vw] ">
-          <SmartContractAddress />
+          <SmartContractAddress contractAddress={contractAddress} />
           <SmartContractInformation />
           <SmartContractInformation />
         </div>
@@ -86,23 +110,17 @@ const ContractChecklist = ({ steps }: ContractChecklistProps) => {
           {steps.map((step) => (
             <div
               key={step.id}
-              className={`flex flex-row gap-[0.333vw] items-center ${
-                step.completed ? "text-[#31006E]" : "text-[#C5C4C8]"
-              }`}
+              className={`flex flex-row gap-[0.333vw] items-center ${step.completed ? "text-[#31006E]" : "text-[#C5C4C8]"}`}
             >
               <div
-                className={`flex w-[1.111vw] aspect-square justify-center items-center rounded-full border-1 border-[#E9EAEB] ${
-                  step.completed ? "bg-transparent" : "bg-transparent"
-                }`}
+                className={`flex w-[1.111vw] aspect-square justify-center items-center rounded-full border-1 border-[#E9EAEB] ${step.completed ? "bg-transparent" : "bg-transparent"}`}
               >
                 {step.completed && (
                   <HiCheck className="w-[1.25vw] aspect-square text-[#039855]" />
                 )}
               </div>
               <p
-                className={`text-[0.972vw] font-jakarta ${
-                  step.completed ? "text-[#039855]" : "text-black"
-                }`}
+                className={`text-[0.972vw] font-jakarta ${step.completed ? "text-[#039855]" : "text-black"}`}
               >
                 {step.label}
               </p>
@@ -114,17 +132,29 @@ const ContractChecklist = ({ steps }: ContractChecklistProps) => {
   );
 };
 
-const AfterDeploy = () => {
+const AfterDeploy = ({ contractAddress = "0x123" }: AfterDeployProps) => {
   const [steps, setSteps] = useState([
     { id: 1, label: "Contract Deployment", completed: true },
     { id: 2, label: "Verify", completed: false },
     { id: 3, label: "Mint", completed: false },
   ]);
   return (
-    <div className="flex flex-col gap-[1.667vw] w-[78.264vw] justify-center items-center min-h-screen bg-white pt-[6vw]">
-      <RWAInformation />
-      <ContractChecklist steps={steps} />
+    <div className="flex flex-col gap-[1.667vw] w-full min-h-screen bg-white pt-[3vw]">
+      <RWAInformation contractAddress={contractAddress} />
+      <div className="w-full flex flex-row gap-[0.833vw]">
+        <ContractChecklist steps={steps} />
+        <div className="w-[18.75vw] aspect-[360/171] ">
+          <TeamCard
+            team="Real Estate"
+            description="Long-term value from physical properties."
+            createdAt="by. companyA"
+            customClass="w-[18.75vw] aspect-[360/171]"
+          />
+        </div>
+      </div>
+      <AnalyticsCard />
       <RegisteredOperators />
+      <TokenCard />
     </div>
   );
 };
