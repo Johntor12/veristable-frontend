@@ -1,5 +1,4 @@
 import { IoClose } from "react-icons/io5";
-import React from "react";
 import { useState } from "react";
 
 type TokenPopupProps = {
