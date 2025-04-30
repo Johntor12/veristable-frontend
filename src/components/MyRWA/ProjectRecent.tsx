@@ -2,12 +2,14 @@
 
 import Image from "next/image";
 import Button from "../Button";
+import { useRouter } from "next/navigation";
 
 export type RWACardProps = {
   team: string;
   title: string;
-  image: string; // Ubah ke string untuk URL dari Supabase
+  image: string;
   description: string;
+  address: string; // Tambahkan address untuk navigasi
 };
 
 export type ProjectRecentProps = {
@@ -16,7 +18,20 @@ export type ProjectRecentProps = {
   data?: RWACardProps[];
 };
 
-const RWACard = ({ team, title, image, description }: RWACardProps) => {
+const RWACard = ({
+  team,
+  title,
+  image,
+  description,
+  address,
+}: RWACardProps) => {
+  const router = useRouter();
+
+  // Fungsi untuk navigasi ke /myrwa/[address]
+  const handleViewClick = () => {
+    router.push(`/myrwa/${address}`);
+  };
+
   return (
     <div className="flex flex-col rounded-[0.694vw] border-1 border-[#D5D7DA] w-[25vw] aspect-[360/283]">
       <div className="relative w-full aspect-[360/136]">
@@ -25,7 +40,7 @@ const RWACard = ({ team, title, image, description }: RWACardProps) => {
           alt="RWA Image"
           fill
           className="object-cover rounded-t-[0.694vw]"
-          onError={() => console.error(`Failed to load image: ${image}`)} // Debugging
+          onError={() => console.error(`Failed to load image: ${image}`)}
         />
       </div>
       <div className="flex flex-col justify-between p-4 gap-[0.883vw]">
@@ -42,7 +57,12 @@ const RWACard = ({ team, title, image, description }: RWACardProps) => {
         </div>
         <div className="flex justify-end">
           <div className="w-[7.708vw] aspect-[111/30]">
-            <Button variant={"secondary"} text={"View"} fullW={true} />
+            <Button
+              variant={"secondary"}
+              text={"View"}
+              fullW={true}
+              onClick={handleViewClick} // Tambahkan onClick untuk navigasi
+            />
           </div>
         </div>
       </div>
@@ -62,20 +82,23 @@ const ProjectRecent = ({
         {
           team: "Hanis Team",
           title: "Fresh Villa Bali",
-          image: "/path/to/fallback-image.png",
+          image: "/assets/MyRWA/Dummy_Image_RWA.png",
           description: "Near from Kuta Beach, very comfortable",
+          address: "0x0000000000000000000000000000000000000000",
         },
         {
           team: "Alpha Group",
           title: "Jakarta Smart Tower",
-          image: "/path/to/fallback-image.png",
+          image: "/assets/MyRWA/Dummy_Image_RWA.png",
           description: "High-tech office building in central Jakarta",
+          address: "0x0000000000000000000000000000000000000000",
         },
         {
           team: "Sunrise Dev",
           title: "Sunset Villa Lombok",
-          image: "/path/to/fallback-image.png",
+          image: "/assets/MyRWA/Dummy_Image_RWA.png",
           description: "Beachfront villa with stunning view",
+          address: "0x0000000000000000000000000000000000000000",
         },
       ];
 
@@ -95,6 +118,7 @@ const ProjectRecent = ({
             title={item.title}
             image={item.image}
             description={item.description}
+            address={item.address}
           />
         ))}
       </div>

@@ -33,15 +33,16 @@ type Section = {
 type RWACardProps = {
   team: string;
   title: string;
-  image: string; // Ubah dari StaticImageData ke string untuk URL dari Supabase
+  image: string;
   description: string;
+  address: string; // Tambahkan address untuk navigasi
 };
 
 const MyRWA = () => {
   const router = useRouter();
   const [searchKeyword, setSearchKeyword] = useState("");
   const [sections, setSections] = useState<Section[]>([]);
-  const [rwaData, setRwaData] = useState<RWACardProps[]>([]); // State untuk ProjectRecent
+  const [rwaData, setRwaData] = useState<RWACardProps[]>([]);
 
   // Ambil data dari Supabase saat komponen dimuat
   useEffect(() => {
@@ -87,10 +88,11 @@ const MyRWA = () => {
         // Format data untuk ProjectRecent
         const projectRecentData: RWACardProps[] = data.map((item: any) => ({
           team:
-            "Owner: " + item.owner.slice(0, 6) + "..." + item.owner.slice(-4), // Misal, team dari owner
+            "Owner: " + item.owner.slice(0, 6) + "..." + item.owner.slice(-4),
           title: item.name,
-          image: item.image?.[0] || "/path/to/fallback-image.png", // Gunakan gambar pertama atau fallback
+          image: item.image?.[0] || "/assets/MyRWA/Dummy_Image_RWA.png",
           description: item.description || "No description available",
+          address: item.address, // Tambahkan address dari Supabase
         }));
 
         setRwaData(projectRecentData);
@@ -134,7 +136,7 @@ const MyRWA = () => {
         <ProjectRecent
           titleSection="Project Recently Added"
           descSection="The latest RWA projects you've onboarded — ready to verify, tokenize, and go live"
-          data={rwaData} // Kirim data dari Supabase
+          data={rwaData}
         />
         <AllTeams />
         <AfterDeploy sections={filteredSections} />
