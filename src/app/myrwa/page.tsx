@@ -141,7 +141,7 @@ const MyRWA = () => {
           data={rwaData}
         />
         <AllTeams />
-        <AfterDeploy sections={filteredSections} />
+        {/* <AfterDeploy sections={filteredSections} /> */}
       </section>
     </div>
   );

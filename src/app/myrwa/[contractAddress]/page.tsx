@@ -8,6 +8,9 @@ import { IoMdCopy, IoIosOpen } from "react-icons/io";
 import { HiCheck } from "react-icons/hi";
 import DummyHouse from "@/assets/MyRWA/Dummy_Image_RWA.png";
 import RegisteredOperators from "@/components/MyRWA/RegisteredOperators";
+import TokenCard from "@/components/MyRWA/TokenCard";
+import AnalyticsCard from "@/components/MyRWA/AnalyticsCard";
+import TeamCard from "@/components/MyRWA/TeamCard";
 
 // Supabase Client Setup
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
@@ -47,9 +50,7 @@ const RWAInformation = ({ data }: { data: any }) => {
           src={data.image?.[0] || DummyHouse.src}
           alt="RWA Image"
           fill
-          onError={() =>
-            console.error("Failed to load image:", data.image?.[0])
-          }
+          onError={() => console.error("Failed to load image:", data.image?.[0])}
         />
       </div>
       <div className="flex flex-col text-[2.5vw] text-black font-jakarta w-[41.667vw] aspect-[596/99]">
@@ -58,9 +59,7 @@ const RWAInformation = ({ data }: { data: any }) => {
         </p>
         <div className="flex flex-row gap-[0.667vw]">
           <SmartContractAddress
-            address={
-              data.address || "0x0000000000000000000000000000000000000000"
-            }
+            address={data.address || "0x0000000000000000000000000000000000000000"}
           />
           <SmartContractInformation label="Token Info" />
           <SmartContractInformation label="Owner Info" />
@@ -169,7 +168,7 @@ const RWADetailPage = () => {
 
         setRwaData(data);
 
-        // Update steps berdasarkan data (contoh: Contract Deployment selesai jika data ada)
+        // Update steps berdasarkan data
         setSteps((prevSteps) =>
           prevSteps.map((step) =>
             step.id === 1 ? { ...step, completed: true } : step
@@ -199,9 +198,7 @@ const RWADetailPage = () => {
   if (error || !rwaData) {
     return (
       <div className="min-h-screen w-full bg-white pt-[6vw] px-4 lg:px-0 font-jakarta ml-[1vw] flex justify-center items-center">
-        <p className="text-red-500 font-jakarta">
-          {error || "No data available"}
-        </p>
+        <p className="text-red-500 font-jakarta">{error || "No data available"}</p>
       </div>
     );
   }
@@ -210,8 +207,20 @@ const RWADetailPage = () => {
     <div className="min-h-screen w-full bg-white pt-[6vw] px-4 lg:px-0 font-jakarta ml-[1vw]">
       <section className="w-[90%] mx-auto py-12 flex flex-col gap-[5vw]">
         <RWAInformation data={rwaData} />
-        <ContractChecklist steps={steps} />
+        <div className="w-full flex flex-row gap-[0.833vw]">
+          <ContractChecklist steps={steps} />
+          <div className="w-[18.75vw] aspect-[360/171]">
+            <TeamCard
+              team="Real Estate"
+              description={rwaData.description || "Long-term value from physical properties."}
+              createdAt={`by ${rwaData.owner.slice(0, 6)}...${rwaData.owner.slice(-4)}`}
+              customClass="w-[18.75vw] aspect-[360/171]"
+            />
+          </div>
+        </div>
+        <AnalyticsCard />
         <RegisteredOperators />
+        <TokenCard contractAddress={contractAddress as string} owner={rwaData.owner} />
       </section>
     </div>
   );
