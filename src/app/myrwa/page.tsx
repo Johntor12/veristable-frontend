@@ -11,6 +11,9 @@ import AfterDeploy from "@/components/MyRWA/AfterDeploy";
 import HeroDashboard from "@/components/dashboard/HeroDashboard";
 import ReservesChart from "@/components/dashboard/ReserveChart";
 import TotalAssetsSection from "@/components/dashboard/TotalAssetsSection";
+import HeroDashboard from "@/components/dashboard/HeroDashboard";
+import ReservesChart from "@/components/dashboard/ReserveChart";
+import TotalAssetsSection from "@/components/dashboard/TotalAssetsSection";
 
 // Tipe untuk Card dan Section
 type Card = {
@@ -151,7 +154,7 @@ const MyRWA = ({ sections }: HeroProps) => {
           descSection="The latest RWA projects you've onboarded — ready to verify, tokenize, and go live"
         />
         <AllTeams />
-        <AfterDeploy />
+        <AfterDeploy contractAddress="0x123" />
         <HeroDashboard />
         <TotalAssetsSection />
         <ReservesChart />

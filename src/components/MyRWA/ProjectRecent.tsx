@@ -2,7 +2,6 @@
 
 import Image, { StaticImageData } from "next/image";
 import DummyHouse from "../../assets/MyRWA/Dummy_Image_RWA.png";
-
 import Button from "../Button";
 
 export type RWACardProps = {
@@ -18,10 +17,15 @@ export type ProjectRecentProps = {
   data?: RWACardProps[];
 };
 
-const RWACard = ({ team, title, image = DummyHouse, description }: RWACardProps) => {
+const RWACard = ({
+  team,
+  title,
+  image = DummyHouse,
+  description,
+}: RWACardProps) => {
   return (
     <div className="flex flex-col rounded-[0.694vw] border-1 border-[#D5D7DA] w-[25vw] aspect-[360/283]">
-       <div className="relative w-full aspect-[360/136]">
+      <div className="relative w-full aspect-[360/136]">
         <Image
           src={image}
           alt="Dummy House.png"
@@ -34,7 +38,9 @@ const RWACard = ({ team, title, image = DummyHouse, description }: RWACardProps)
           <h4 className="flex justify-items-center text-[0.863vw] leading-[1.25vw] text-[#420092] font-medium">
             {team}
           </h4>
-          <p className="font-jakarta text-[1.25vw] font-bold text-black">{title}</p>
+          <p className="font-jakarta text-[1.25vw] font-bold text-black">
+            {title}
+          </p>
           <p className="text-[0.972vw] leading-[1.458vw] font-normal font-jakarta text-[#535862]">
             {description}
           </p>
@@ -58,19 +64,19 @@ const ProjectRecent = ({
     {
       team: "Hanis Team",
       title: "Fresh Villa Bali",
-      image : DummyHouse,
+      image: DummyHouse,
       description: "Near from Kuta Beach, very comfortable",
     },
     {
       team: "Alpha Group",
       title: "Jakarta Smart Tower",
-      image : DummyHouse,
+      image: DummyHouse,
       description: "High-tech office building in central Jakarta",
     },
     {
       team: "Sunrise Dev",
       title: "Sunset Villa Lombok",
-      image : DummyHouse,
+      image: DummyHouse,
       description: "Beachfront villa with stunning view",
     },
   ];

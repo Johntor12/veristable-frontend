@@ -1,20 +1,19 @@
 import Image from "next/image";
-import DummyHouse from "../../assets/MyRWA/Dummy_Image_RWA.png";
 import { IoMdCopy, IoIosOpen } from "react-icons/io";
 import { HiCheck } from "react-icons/hi";
 import { useState, useMemo } from "react";
 import RegisteredOperators from "./RegisteredOperators";
-import TokenCard from "./TokenCard";
-import AnalyticsCard from "./AnalyticsCard";
 import TeamCard from "./TeamCard";
-import TokenPopup from "./TokenPopup";
+import AnalyticsCard from "./AnalyticsCard";
+import TokenCard from "./TokenCard";
+import DummyHouse from "../../assets/MyRWA/Dummy_Image_RWA.png";
 
 type AfterDeployProps = {
-  contractAddress?: string;
+  contractAddress: string;
 };
 
 const SmartContractAddress = ({
-  contractAddress = "0x123",
+  contractAddress,
 }: {
   contractAddress: string;
 }) => {

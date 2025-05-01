@@ -2,8 +2,8 @@ import { HiPlusSm } from "react-icons/hi";
 
 const AnalyticsCard = ({}) => {
   return (
-    <div className="flex flex-col justify-center items-center w-[51.667vw] aspect-[744/410] font-bold text-[1.25vw] rounded-[0.694vw] border-1 p-[1.667vw] gap-[0.833vw]">
-      <div className="flex flex-row w-full justify-between w-full border-b-1 p-2">
+    <div className="flex flex-col justify-center items-center w-[51.667vw] aspect-[744/410] font-bold text-[1.25vw] rounded-[0.694vw] border-1 border-[#D5D7DA] p-[1.667vw] gap-[0.833vw]">
+      <div className="flex flex-row w-full justify-between w-full border-b-1 p-2 border-[#D5D7DA]">
         <p className="text-[1.25vw] leading-[1.875vw] text-black font-bold">
           Analytics
         </p>
