@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Button from "@/components/Button";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import ProjectRecent from "@/components/MyRWA/ProjectRecent";
 import AllTeams from "@/components/MyRWA/AllTeams";
@@ -10,8 +10,14 @@ import HeroRWA from "@/components/MyRWA/Hero";
 import AfterDeploy from "@/components/MyRWA/AfterDeploy";
 import TokenCard from "@/components/MyRWA/TokenCard";
 import AnalyticsCard from "@/components/MyRWA/AnalyticsCard";
+import { createClient } from "@supabase/supabase-js";
 
-// Tipe untuk Card dan Section
+// Supabase Client Setup
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
+const supabase = createClient(supabaseUrl, supabaseKey);
+
+// Tipe untuk Card dan Section (untuk AfterDeploy)
 type Card = {
   badge: string;
   title: string;
@@ -25,99 +31,85 @@ type Section = {
   cards: Card[];
 };
 
-type HeroProps = {
-  sections: Section[];
+// Tipe untuk RWACardProps (untuk ProjectRecent)
+type RWACardProps = {
+  team: string;
+  title: string;
+  image: string;
+  description: string;
+  address: string; // Tambahkan address untuk navigasi
 };
 
-const realEstateData = {
-  sections: [
-    {
-      heading: "Popular",
-      caption:
-        "Discover the most in-demand Real World Assets in the market — highly trusted and widely adopted by users.",
-      cards: [
-        {
-          badge: "Audited",
-          title: "Real Estate",
-          description: "Long-term value from physical properties.",
-          by: "companyA",
-        },
-        {
-          badge: "Audited",
-          title: "Carbon Credits",
-          description: "Earn from verified climate projects",
-          by: "companyB",
-        },
-        {
-          badge: "Audited",
-          title: "Commodities",
-          description: "Trade real assets like gold and oil",
-          by: "companyC",
-        },
-      ],
-    },
-    {
-      heading: "Trending This Week",
-      caption:
-        "Check out what's gaining attention this week — assets that are attracting the most user activity",
-      cards: [
-        {
-          badge: "Audited",
-          title: "Real Estate",
-          description: "Long-term value from physical properties.",
-          by: "companyA",
-        },
-        {
-          badge: "Audited",
-          title: "Carbon Credits",
-          description: "Earn from verified climate projects",
-          by: "companyB",
-        },
-        {
-          badge: "Audited",
-          title: "Commodities",
-          description: "Trade real assets like gold and oil",
-          by: "companyC",
-        },
-      ],
-    },
-    {
-      heading: "Recommendation",
-      caption:
-        "Curated assets tailored to your profile and market trends. Discover smart picks to grow and diversify your portfolio.",
-      cards: [
-        {
-          badge: "Audited",
-          title: "Real Estate",
-          description: "Long-term value from physical properties.",
-          by: "companyA",
-        },
-        {
-          badge: "Audited",
-          title: "Carbon Credits",
-          description: "Earn from verified climate projects",
-          by: "companyB",
-        },
-        {
-          badge: "Audited",
-          title: "Commodities",
-          description: "Trade real assets like gold and oil",
-          by: "companyC",
-        },
-      ],
-    },
-  ],
-};
-
-const MyRWA = ({ sections }: HeroProps) => {
+const MyRWA = () => {
   const router = useRouter();
-  // State untuk input search
   const [searchKeyword, setSearchKeyword] = useState("");
+  const [sections, setSections] = useState<Section[]>([]);
+  const [rwaData, setRwaData] = useState<RWACardProps[]>([]);
 
-  // Filter sections berdasarkan searchKeyword
+  // Ambil data dari Supabase saat komponen dimuat
+  useEffect(() => {
+    const fetchRealEstateData = async () => {
+      try {
+        const { data, error } = await supabase.from("real_estate").select("*");
+        if (error) {
+          console.error("Error fetching real estate data:", error);
+          return;
+        }
+
+        // Format data untuk AfterDeploy (sections)
+        const realEstateCards: Card[] = data.map((item: any) => ({
+          badge: "Audited",
+          title: item.name,
+          description: item.description || "No description available",
+          by: item.owner.slice(0, 6) + "..." + item.owner.slice(-4),
+        }));
+
+        const dynamicSections: Section[] = [
+          {
+            heading: "Popular",
+            caption:
+              "Discover the most in-demand Real World Assets in the market — highly trusted and widely adopted by users.",
+            cards: realEstateCards,
+          },
+          {
+            heading: "Trending This Week",
+            caption:
+              "Check out what's gaining attention this week — assets that are attracting the most user activity",
+            cards: realEstateCards,
+          },
+          {
+            heading: "Recommendation",
+            caption:
+              "Curated assets tailored to your profile and market trends. Discover smart picks to grow and diversify your portfolio.",
+            cards: realEstateCards,
+          },
+        ];
+
+        setSections(dynamicSections);
+
+        // Format data untuk ProjectRecent
+        const projectRecentData: RWACardProps[] = data.map((item: any) => ({
+          team:
+            "Owner: " + item.owner.slice(0, 6) + "..." + item.owner.slice(-4),
+          title: item.name,
+          image: item.image?.[0] || "/assets/MyRWA/Dummy_Image_RWA.png",
+          description: item.description || "No description available",
+          address: item.address, // Tambahkan address dari Supabase
+        }));
+
+        setRwaData(projectRecentData);
+      } catch (error) {
+        console.error("Error in fetchRealEstateData:", error);
+      }
+    };
+
+    fetchRealEstateData();
+  }, []);
+
+  // Filter sections berdasarkan searchKeyword (untuk AfterDeploy)
   const filteredSections = useMemo(() => {
     const keyword = searchKeyword.toLowerCase();
-    return sections?.map((section) => ({
+    return sections.map((section) => ({
       ...section,
       cards: section.cards.filter(
         (card) =>
@@ -126,7 +118,7 @@ const MyRWA = ({ sections }: HeroProps) => {
           card.by.toLowerCase().includes(keyword)
       ),
     }));
-  }, [searchKeyword]);
+  }, [searchKeyword, sections]);
 
   // Fungsi searching
   const handleSearch = () => {
@@ -143,13 +135,13 @@ const MyRWA = ({ sections }: HeroProps) => {
       <section className="w-[90%] mx-auto py-12 flex flex-col gap-[5vw]">
         {/* Bagian Atas */}
         <HeroRWA />
-
-        <ProjectRecent />
         <ProjectRecent
           titleSection="Project Recently Added"
           descSection="The latest RWA projects you've onboarded — ready to verify, tokenize, and go live"
+          data={rwaData}
         />
-        <AfterDeploy />
+        <AllTeams />
+        <AfterDeploy sections={filteredSections} />
       </section>
     </div>
   );

@@ -9,15 +9,7 @@ import AnalyticsCard from "./AnalyticsCard";
 import TeamCard from "./TeamCard";
 import TokenPopup from "./TokenPopup";
 
-type AfterDeployProps = {
-  contractAddress?: string;
-};
-
-const SmartContractAddress = ({
-  contractAddress = "0x123",
-}: {
-  contractAddress: string;
-}) => {
+const SmartContractAddress = () => {
   return (
     <button className="flex flex-row gap-[0.333vw] hover:cursor-pointer active:cursor-pointer border-1 border-[#D5D7DA] rounded-[0.208vw] w-[10.833vw] aspect-[156/36] justify-center items-center">
       <IoMdCopy className="w-[1.25vw] aspect-square text-[#C5C4C8]" />
@@ -44,6 +36,7 @@ const RWAInformation = ({
 }: {
   contractAddress: string;
 }) => {
+const RWAInformation = () => {
   return (
     <div className="flex flex-row w-[49.722vw] aspect-[716/100] gap-[1.111vw]">
       <div className="relative w-[6.994vw] aspect-[150/100]">
@@ -55,6 +48,7 @@ const RWAInformation = ({
         </p>
         <div className="flex flex-row gap-[0.667vw] ">
           <SmartContractAddress contractAddress={contractAddress} />
+          <SmartContractAddress />
           <SmartContractInformation />
           <SmartContractInformation />
         </div>
