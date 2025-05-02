@@ -70,7 +70,9 @@ const TokenCard = ({ contractAddress, owner }: TokenProps) => {
   const [decimals, setDecimals] = useState(18);
   const [symbol, setSymbol] = useState("BAL");
   const [isPopupOpen, setIsPopupOpen] = useState(false);
-  const [popupType, setPopupType] = useState<"Mint" | "Burn" | "Reserve">("Mint");
+  const [popupType, setPopupType] = useState<"Mint" | "Burn" | "Reserve">(
+    "Mint"
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -96,12 +98,18 @@ const TokenCard = ({ contractAddress, owner }: TokenProps) => {
         console.log("Contract Address:", contractAddress);
 
         const provider = new ethers.BrowserProvider(walletClient);
-        const contract = new ethers.Contract(contractAddress, TokenABI, provider);
+        const contract = new ethers.Contract(
+          contractAddress,
+          TokenABI,
+          provider
+        );
 
         // Ambil totalSupply
         const totalSupplyRaw = await contract.totalSupply();
         const decimals = await contract.decimals();
-        const totalSupply = Number(ethers.formatUnits(totalSupplyRaw, decimals));
+        const totalSupply = Number(
+          ethers.formatUnits(totalSupplyRaw, decimals)
+        );
         setTotalSupply(totalSupply);
 
         // Ambil balanceOf (owned by you)
@@ -119,7 +127,9 @@ const TokenCard = ({ contractAddress, owner }: TokenProps) => {
         console.log("Token data:", { totalSupply, balance, decimals, symbol });
       } catch (err: any) {
         console.error("Error fetching token data:", err);
-        setError(`Failed to load token data: ${err.reason || err.message || "Unknown error"}`);
+        setError(
+          `Failed to load token data: ${err.reason || err.message || "Unknown error"}`
+        );
       } finally {
         setLoading(false);
       }
@@ -169,7 +179,9 @@ const TokenCard = ({ contractAddress, owner }: TokenProps) => {
       alert(`Successfully minted ${amount} ${symbol}!`);
     } catch (err: any) {
       console.error("Error minting token:", err);
-      alert(`Failed to mint token: ${err.reason || err.message || "Unknown error"}`);
+      alert(
+        `Failed to mint token: ${err.reason || err.message || "Unknown error"}`
+      );
     } finally {
       setLoading(false);
     }
@@ -221,7 +233,9 @@ const TokenCard = ({ contractAddress, owner }: TokenProps) => {
       alert(`Successfully burned ${amount} ${symbol}!`);
     } catch (err: any) {
       console.error("Error burning token:", err);
-      alert(`Failed to burn token: ${err.reason || err.message || "Unknown error"}`);
+      alert(
+        `Failed to burn token: ${err.reason || err.message || "Unknown error"}`
+      );
     } finally {
       setLoading(false);
     }
@@ -289,7 +303,9 @@ const TokenCard = ({ contractAddress, owner }: TokenProps) => {
           Please connect your wallet to view token data
         </p>
         <button
-          onClick={() => window.ethereum.request({ method: "eth_requestAccounts" })}
+          onClick={() =>
+            window.ethereum.request({ method: "eth_requestAccounts" })
+          }
           className="bg-purple-700 text-white px-4 py-2 rounded hover:bg-purple-800 text-[0.833vw] font-jakarta w-[10vw]"
         >
           Connect Wallet
@@ -324,7 +340,7 @@ const TokenCard = ({ contractAddress, owner }: TokenProps) => {
           </div>
         </div>
 
-                <div className="flex flex-col gap-[0.833vw] bg-[#FAFAFA] p-[1.883vw]">
+        <div className="flex flex-col gap-[0.833vw] bg-[#FAFAFA] p-[1.883vw]">
           <p className="font-jakarta text-[1.25vw] leading-[1.875vw] text-black font-bold border-b-2 border-[#D5D7DA]">
             Reserve Details
           </p>
