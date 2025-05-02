@@ -131,7 +131,7 @@ const MyRWA = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white pt-[6vw] px-4 lg:px-0 font-jakarta ml-[1vw]">
+    <div className="min-h-screen bg-white pt-[6vw] px-4 lg:px-0 font-jakarta">
       <section className="w-[90%] mx-auto py-12 flex flex-col gap-[5vw]">
         {/* Bagian Atas */}
         <HeroRWA />

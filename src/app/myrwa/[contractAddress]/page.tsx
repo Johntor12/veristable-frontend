@@ -50,7 +50,9 @@ const RWAInformation = ({ data }: { data: any }) => {
           src={data.image?.[0] || DummyHouse.src}
           alt="RWA Image"
           fill
-          onError={() => console.error("Failed to load image:", data.image?.[0])}
+          onError={() =>
+            console.error("Failed to load image:", data.image?.[0])
+          }
         />
       </div>
       <div className="flex flex-col text-[2.5vw] text-black font-jakarta w-[41.667vw] aspect-[596/99]">
@@ -59,7 +61,9 @@ const RWAInformation = ({ data }: { data: any }) => {
         </p>
         <div className="flex flex-row gap-[0.667vw]">
           <SmartContractAddress
-            address={data.address || "0x0000000000000000000000000000000000000000"}
+            address={
+              data.address || "0x0000000000000000000000000000000000000000"
+            }
           />
           <SmartContractInformation label="Token Info" />
           <SmartContractInformation label="Owner Info" />
@@ -189,7 +193,7 @@ const RWADetailPage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen w-full bg-white pt-[6vw] px-4 lg:px-0 font-jakarta ml-[1vw] flex justify-center items-center">
+      <div className="min-h-screen w-full bg-white pt-[6vw] px-4 lg:px-0 font-jakarta flex justify-center items-center">
         <p className="text-black font-jakarta">Loading...</p>
       </div>
     );
@@ -197,14 +201,16 @@ const RWADetailPage = () => {
 
   if (error || !rwaData) {
     return (
-      <div className="min-h-screen w-full bg-white pt-[6vw] px-4 lg:px-0 font-jakarta ml-[1vw] flex justify-center items-center">
-        <p className="text-red-500 font-jakarta">{error || "No data available"}</p>
+      <div className="min-h-screen w-full bg-white pt-[6vw] px-4 lg:px-0 font-jakarta flex justify-center items-center">
+        <p className="text-red-500 font-jakarta">
+          {error || "No data available"}
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen w-full bg-white pt-[6vw] px-4 lg:px-0 font-jakarta ml-[1vw]">
+    <div className="min-h-screen w-full bg-white pt-[6vw] px-4 lg:px-0 font-jakarta">
       <section className="w-[90%] mx-auto py-12 flex flex-col gap-[5vw]">
         <RWAInformation data={rwaData} />
         <div className="w-full flex flex-row gap-[0.833vw]">
@@ -212,7 +218,10 @@ const RWADetailPage = () => {
           <div className="w-[18.75vw] aspect-[360/171]">
             <TeamCard
               team="Real Estate"
-              description={rwaData.description || "Long-term value from physical properties."}
+              description={
+                rwaData.description ||
+                "Long-term value from physical properties."
+              }
               createdAt={`by ${rwaData.owner.slice(0, 6)}...${rwaData.owner.slice(-4)}`}
               customClass="w-[18.75vw] aspect-[360/171]"
             />
@@ -220,7 +229,10 @@ const RWADetailPage = () => {
         </div>
         <AnalyticsCard />
         <RegisteredOperators />
-        <TokenCard contractAddress={contractAddress as string} owner={rwaData.owner} />
+        <TokenCard
+          contractAddress={contractAddress as string}
+          owner={rwaData.owner}
+        />
       </section>
     </div>
   );

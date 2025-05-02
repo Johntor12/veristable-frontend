@@ -31,6 +31,7 @@ const TokenPopup = ({
     }
 
     onSubmit(amountNum);
+    setAmount("");
     onClose();
   };
 
@@ -47,7 +48,9 @@ const TokenPopup = ({
         </h2>
         <div className="mb-4">
           <label className="block text-[0.833vw] text-gray-600 mb-1">
-            Current Token Supply
+            {type === "Reserve"
+              ? "Current Reserve Balance"
+              : "Current Token Supply"}
           </label>
           <p className="w-full font-jakarta text-[0.972vw] text-[#717680] border px-3 py-2 rounded bg-gray-100">
             {totalSupply} {symbol}

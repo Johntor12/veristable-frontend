@@ -11,6 +11,51 @@ import TokenPopup from "./TokenPopup";
 import { useAccount, useWalletClient } from "wagmi";
 import { ethers } from "ethers";
 
+// ABI dan Alamat Kontrak
+const TokenFactoryABI = [
+  "function createToken(string name, string symbol, address tokenOwner) public returns (address)",
+  "function getTokensByUser(address user) public view returns (address[])",
+  "function addToAVSTokens(address token) public",
+  "function removeFromAVSTokens(address token) public",
+  "function getUserTokenCount(address user) public view returns (uint256)",
+];
+
+const TokenABI = [
+  "function mint(address to, uint256 amount) public",
+  "function burn(uint256 amount) public",
+  "function balanceOf(address account) public view returns (uint256)",
+  "function totalSupply() public view returns (uint256)",
+  "function decimals() public view returns (uint256)",
+  "function symbol() public view returns (string)",
+  "function owner() public view returns (address)",
+];
+
+const ReserveABI = [
+  "function setReserveBalance(address tokenAddress, uint256 newBalance) external",
+  "function getReserveBalance(address tokenAddress) external view returns (uint256)",
+  "function getLastUpdateTimestamp() external view returns (uint256)",
+];
+
+const VeristableAVSABI = [
+  "function underwrite(address token, uint128 amount) external",
+  "function withdraw(address token, uint128 amount) external",
+  "function claimRewards(address token) external",
+  "function depositRewards(address token, uint128 amount) public",
+  "function pause() public",
+  "function unpause() public",
+  "function transferOwnership(address newOwner) public",
+  "function paused() public view returns (bool)",
+  "function owner() public view returns (address)",
+  "function underwritingAmounts(address token, address underwriter) public view returns (uint128)",
+  "function totalUnderwriting(address token) public view returns (uint128)",
+  "function totalRewards(address token) public view returns (uint128)",
+  "function unclaimedRewards(address token, address underwriter) public view returns (uint128)",
+];
+
+// Alamat Kontrak di Pharos Network (NEW)
+const reserveAddress = "0xb080914D90A76EC677a9d288e9BF03B9a052769d";
+const veristableAVSAddress = "0x9Ec9eb3E56B0B66948dB51ce98A56cA7a5b49Ad7";
+
 type TokenAction = {
   label: React.ReactNode;
   text: string;
@@ -26,17 +71,6 @@ type TokenProps = {
 type ActionTokenCardProps = TokenAction & {
   customClass?: string;
 };
-
-// ABI Kontrak Token
-const TokenABI = [
-  "function mint(address to, uint256 amount) public",
-  "function burn(uint256 amount) public",
-  "function balanceOf(address account) public view returns (uint256)",
-  "function totalSupply() public view returns (uint256)",
-  "function decimals() public view returns (uint256)",
-  "function symbol() public view returns (string)",
-  "function owner() public view returns (address)",
-];
 
 const ActionTokenCard = ({
   label,
@@ -67,6 +101,7 @@ const TokenCard = ({ contractAddress, owner }: TokenProps) => {
   const { data: walletClient } = useWalletClient();
   const [totalSupply, setTotalSupply] = useState(0);
   const [ownedByYou, setOwnedByYou] = useState(0);
+  const [reserveBalance, setReserveBalance] = useState(0);
   const [decimals, setDecimals] = useState(18);
   const [symbol, setSymbol] = useState("BAL");
   const [isPopupOpen, setIsPopupOpen] = useState(false);
@@ -86,7 +121,7 @@ const TokenCard = ({ contractAddress, owner }: TokenProps) => {
   useEffect(() => {
     const fetchTokenData = async () => {
       if (!walletClient || !account) {
-        setLoading(true); // Tetap loading hingga wallet terhubung
+        setLoading(true);
         return;
       }
 
@@ -98,33 +133,52 @@ const TokenCard = ({ contractAddress, owner }: TokenProps) => {
         console.log("Contract Address:", contractAddress);
 
         const provider = new ethers.BrowserProvider(walletClient);
-        const contract = new ethers.Contract(
+        const tokenContract = new ethers.Contract(
           contractAddress,
           TokenABI,
           provider
         );
+        const reserveContract = new ethers.Contract(
+          reserveAddress,
+          ReserveABI,
+          provider
+        );
 
         // Ambil totalSupply
-        const totalSupplyRaw = await contract.totalSupply();
-        const decimals = await contract.decimals();
+        const totalSupplyRaw = await tokenContract.totalSupply();
+        const decimals = await tokenContract.decimals();
         const totalSupply = Number(
           ethers.formatUnits(totalSupplyRaw, decimals)
         );
         setTotalSupply(totalSupply);
 
         // Ambil balanceOf (owned by you)
-        const balanceRaw = await contract.balanceOf(account);
+        const balanceRaw = await tokenContract.balanceOf(account);
         const balance = Number(ethers.formatUnits(balanceRaw, decimals));
         setOwnedByYou(balance);
+
+        // Ambil reserve balance
+        const reserveBalanceRaw =
+          await reserveContract.getReserveBalance(contractAddress);
+        const reserveBalance = Number(
+          ethers.formatUnits(reserveBalanceRaw, decimals)
+        );
+        setReserveBalance(reserveBalance);
 
         // Ambil decimals
         setDecimals(Number(decimals));
 
         // Ambil symbol
-        const symbol = await contract.symbol();
+        const symbol = await tokenContract.symbol();
         setSymbol(symbol);
 
-        console.log("Token data:", { totalSupply, balance, decimals, symbol });
+        console.log("Token data:", {
+          totalSupply,
+          balance,
+          reserveBalance,
+          decimals,
+          symbol,
+        });
       } catch (err: any) {
         console.error("Error fetching token data:", err);
         setError(
@@ -241,6 +295,69 @@ const TokenCard = ({ contractAddress, owner }: TokenProps) => {
     }
   };
 
+  // Fungsi untuk reserve token (underwrite)
+  const handleReserve = async (amount: number) => {
+    if (!walletClient || !account) {
+      alert("Please connect your wallet!");
+      return;
+    }
+
+    if (amount <= 0) {
+      alert("Amount must be greater than 0");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const provider = new ethers.BrowserProvider(walletClient);
+      const signer = await provider.getSigner();
+      const veristableAVSContract = new ethers.Contract(
+        veristableAVSAddress,
+        VeristableAVSABI,
+        signer
+      );
+      const reserveContract = new ethers.Contract(
+        reserveAddress,
+        ReserveABI,
+        signer
+      );
+
+      // Konversi amount ke format uint128 yang sesuai
+      const amountRaw = ethers.parseUnits(amount.toString(), decimals);
+
+      // Panggil fungsi underwrite di VeristableAVS
+      const underwriteTx = await veristableAVSContract.underwrite(
+        contractAddress,
+        amountRaw
+      );
+      await underwriteTx.wait();
+
+      // Update reserve balance di Reserve contract
+      const newReserveBalance = reserveBalance + amount;
+      const reserveTx = await reserveContract.setReserveBalance(
+        contractAddress,
+        ethers.parseUnits(newReserveBalance.toString(), decimals)
+      );
+      await reserveTx.wait();
+
+      // Perbarui state setelah reserve
+      const reserveBalanceRaw =
+        await reserveContract.getReserveBalance(contractAddress);
+      setReserveBalance(
+        Number(ethers.formatUnits(reserveBalanceRaw, decimals))
+      );
+
+      alert(`Successfully reserved ${amount} ${symbol}!`);
+    } catch (err: any) {
+      console.error("Error reserving token:", err);
+      alert(
+        `Failed to reserve token: ${err.reason || err.message || "Unknown error"}`
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Handler untuk popup submit
   const handlePopupSubmit = (amount: number) => {
     switch (popupType) {
@@ -251,7 +368,7 @@ const TokenCard = ({ contractAddress, owner }: TokenProps) => {
         handleBurn(amount);
         break;
       case "Reserve":
-        alert(`Token ${amount} reserved successfully (not implemented).`);
+        handleReserve(amount);
         break;
     }
     setIsPopupOpen(false);
@@ -355,7 +472,7 @@ const TokenCard = ({ contractAddress, owner }: TokenProps) => {
                   Total Reserve
                 </p>
                 <div className="text-[1.111vw] font-bold text-black leading-[1.667vw]">
-                  {totalSupply}
+                  {reserveBalance} {symbol}
                 </div>
               </div>
             </div>
