@@ -1,58 +1,38 @@
+"use client";
+
 import { IoClose } from "react-icons/io5";
 import { useState } from "react";
 
 type TokenPopupProps = {
-  type?: "Mint" | "Burn" | "Reserve";
+  type: "Mint" | "Burn" | "Reserve";
   isOpen: boolean;
-  onClose?: () => void;
+  onClose: () => void;
   onSubmit: (amount: number) => void;
+  totalSupply: number;
+  symbol: string;
 };
 
 const TokenPopup = ({
-  type = "Mint",
+  type,
   isOpen,
   onClose,
   onSubmit,
+  totalSupply,
+  symbol,
 }: TokenPopupProps) => {
-  const [isShown, setIsShown] = useState(false);
   const [amount, setAmount] = useState("");
-  const [totalToken, setTotalToken] = useState("");
 
-  const handleVerify = () => {
+  const handleSubmit = () => {
     const amountNum = parseFloat(amount);
-    const totalNum = parseFloat(totalToken);
 
-    if (isNaN(amountNum) || isNaN(totalNum)) {
-      alert("Harap masukkan angka yang valid.");
+    if (isNaN(amountNum) || amountNum <= 0) {
+      alert("Please enter a valid amount greater than 0");
       return;
     }
 
-    let updatedTotal = totalNum;
-
-    switch (type) {
-      case "Mint":
-        updatedTotal = totalNum + amountNum;
-        console.log(`Token Minted: ${amountNum}`);
-        onSubmit(updatedTotal);
-        break;
-
-      case "Burn":
-        updatedTotal = totalNum - amountNum;
-        console.log(`Token Burned: ${amountNum}`);
-        onSubmit(updatedTotal);
-        break;
-
-      case "Reserve":
-        console.log(`Token Reserved: ${amountNum}`);
-        break;
-    }
-
-    if (type === "Mint" || type === "Burn") {
-      setTotalToken(updatedTotal.toString());
-    }
-
-    alert(`${type} berhasil diproses!`);
-    onClose?.();
+    onSubmit(amountNum);
+    setAmount("");
+    onClose();
   };
 
   if (!isOpen) return null;
@@ -63,38 +43,37 @@ const TokenPopup = ({
         <button onClick={onClose} className="absolute right-4 top-4 text-xl">
           <IoClose className="text-black" />
         </button>
-        <h2 className="font-jakarta text-[0.833vw] leading-[1.25vw] font-bold mb-4 text-black">
+        <h2 className="font-jakarta text-[1.2vw] font-bold mb-4 text-black">
           {type} Token
         </h2>
         <div className="mb-4">
-          <label className="blocype-sm text-gray-600 mb-1">Token Supply</label>
-          <input
-            type="text"
-            placeholder="200.000 NL"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            className="w-full font-jakarta font-regular text-[#717680] border px-3 py-2 rounded bg-white"
-          />
+          <label className="block text-[0.833vw] text-gray-600 mb-1">
+            {type === "Reserve"
+              ? "Current Reserve Balance"
+              : "Current Token Supply"}
+          </label>
+          <p className="w-full font-jakarta text-[0.972vw] text-[#717680] border px-3 py-2 rounded bg-gray-100">
+            {totalSupply} {symbol}
+          </p>
         </div>
         <div className="mb-6">
-          <label className="block text-sm text-gray-600 mb-1">
-            Token {type}
-            <span className="text-red-500">*</span>
+          <label className="block text-[0.833vw] text-gray-600 mb-1">
+            Amount to {type} <span className="text-red-500">*</span>
           </label>
           <input
-            type="text"
-            placeholder="Type here"
-            value={totalToken}
-            onChange={(e) => setTotalToken(e.target.value)}
-            className="w-full border px-3 py-2 rounded text-[#717680] border px-3 py-2 rounded bg-white"
+            type="number"
+            placeholder={`Enter amount to ${type.toLowerCase()}`}
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            className="w-full font-jakarta text-[0.972vw] text-[#717680] border px-3 py-2 rounded bg-white"
           />
         </div>
         <div className="w-full flex justify-end">
           <button
-            onClick={handleVerify}
-            className="bg-purple-700 text-white px-4 py-2 rounded hover:bg-purple-800"
+            onClick={handleSubmit}
+            className="bg-purple-700 text-white px-4 py-2 rounded hover:bg-purple-800 text-[0.833vw] font-jakarta"
           >
-            Verify RWA
+            {type} Token
           </button>
         </div>
       </div>
