@@ -1,7 +1,6 @@
 import { AiOutlineSearch } from "react-icons/ai";
 import { useState, useEffect } from "react";
 import { createClient } from "@supabase/supabase-js";
-import { ethers } from "ethers";
 import { useAccount, useWalletClient } from "wagmi";
 import TokenActionPopup from "./TokenActionPopup";
 
@@ -10,26 +9,13 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-// Smart Contract ABI
-const TokenABI = [
-  "function totalSupply() public view returns (uint256)",
-  "function decimals() public view returns (uint256)",
-  "function symbol() public view returns (string)",
-  "function balanceOf(address account) public view returns (uint256)",
-];
-
-const ReserveABI = [
-  "function getReserveBalance(address tokenAddress) external view returns (uint256)",
-  "function getLastUpdateTimestamp() external view returns (uint256)",
-];
-
 interface Token {
   id: number;
   name: string;
   address: string;
-  totalSupply: string;
-  reserve: string;
-  restake: string;
+  totalSupply: number;
+  reserve: number;
+  restake: number; // Sekarang float
 }
 
 const RegisteredOperators = () => {
@@ -55,100 +41,19 @@ const RegisteredOperators = () => {
         return;
       }
 
-      // Format data awal dari Supabase
+      // Format data dari Supabase ke interface Token
       const formattedTokens: Token[] = supabaseData.map(
         (item: any, index: number) => ({
           id: index + 1,
           name: item.name || "Unknown",
           address: item.address || "-",
-          totalSupply: "-",
-          reserve: "-",
-          restake: "-",
+          totalSupply: item.totalSupply ? Number(item.totalSupply) : "-",
+          reserve: item.reserve ? Number(item.reserve) : "-",
+          restake: item.restake ? Number(item.restake) : "-", // Float tetap dibiarkan sebagai number
         })
       );
 
-      // Inisialisasi provider
-      const provider = new ethers.JsonRpcProvider(
-        "https://devnet.dplabs-internal.com"
-      );
-
-      // Debugging: Cek koneksi provider
-      try {
-        const network = await provider.getNetwork();
-        console.log("Connected to network:", network);
-      } catch (err) {
-        console.error("Provider connection failed:", err);
-        setTokens(formattedTokens);
-        setLoading(false);
-        return;
-      }
-
-      // Ambil data on-chain secara paralel
-      const tokenPromises = formattedTokens.map(async (token) => {
-        if (token.address !== "-" && ethers.isAddress(token.address)) {
-          try {
-            console.log(`Fetching data for token: ${token.address}`);
-
-            // Verifikasi kontrak ada
-            const code = await provider.getCode(token.address);
-            if (code === "0x") {
-              console.warn(`No contract at ${token.address}`);
-              return { ...token, totalSupply: "-", reserve: "-" };
-            }
-
-            const tokenContract = new ethers.Contract(
-              token.address,
-              TokenABI,
-              provider
-            );
-            const reserveContract = new ethers.Contract(
-              reserveAddress,
-              ReserveABI,
-              provider
-            );
-
-            // Ambil decimals
-            const decimalsBigInt = await tokenContract.decimals();
-            const decimals = Number(decimalsBigInt);
-
-            // Ambil symbol
-            const symbol = await tokenContract.symbol();
-
-            // Ambil totalSupply
-            const totalSupplyRaw = await tokenContract.totalSupply();
-            const totalSupply = parseFloat(
-              ethers.formatUnits(totalSupplyRaw, decimals)
-            ).toFixed(2);
-
-            // Ambil reserve balance
-            const reserveBalanceRaw = await reserveContract.getReserveBalance(
-              token.address
-            );
-            const reserve = parseFloat(
-              ethers.formatUnits(reserveBalanceRaw, decimals)
-            ).toFixed(2);
-
-            console.log(`Success for ${token.address}:`, {
-              totalSupply,
-              reserve,
-              symbol,
-            });
-
-            return {
-              ...token,
-              totalSupply: `${totalSupply} ${symbol}`,
-              reserve: `${reserve} ${symbol}`,
-            };
-          } catch (err) {
-            console.error(`Error for ${token.address}:`, err);
-            return { ...token, totalSupply: "-", reserve: "-" };
-          }
-        }
-        return token;
-      });
-
-      const updatedTokens = await Promise.all(tokenPromises);
-      setTokens(updatedTokens);
+      setTokens(formattedTokens);
     } catch (err) {
       console.error("Error in fetchTokenData:", err);
       setTokens([]);
@@ -198,10 +103,10 @@ const RegisteredOperators = () => {
             TOKEN SUPPLY
           </p>
           <p className="font-jakarta text-[0.833vw] text-black leading-[1.25vw] W-[15%]">
-            TOKEN RESERVE
+            RESERVE
           </p>
           <p className="font-jakarta text-[0.833vw] text-black leading-[1.25vw] w-[15%]">
-            TOKEN RESTAKE
+            RESTAKE
           </p>
           <p className="font-jakarta text-[0.833vw] text-black leading-[1.25vw] w-[15%]">
             ACTIONS
@@ -225,18 +130,18 @@ const RegisteredOperators = () => {
                   {token.address.slice(0, 6)}...{token.address.slice(-4)}
                 </span>
                 <span className="font-jakarta text-center font-medium text-[0.972vw] text-black w-[15%]">
-                  {token.totalSupply}
+                  {token.totalSupply !== "-" ? `${token.totalSupply}` : "-"}
                 </span>
                 <span className="font-jakarta text-center font-medium text-[0.972vw] text-black w-[15%]">
-                  {token.reserve}
+                  {token.reserve !== "-" ? `${token.reserve}` : "-"}
                 </span>
                 <span className="font-jakarta text-center font-medium text-[0.972vw] text-black w-[15%]">
-                  {token.restake}
+                  {token.restake !== "-" ? `${token.restake.toFixed(2)}` : "-"}
                 </span>
                 <span className="font-jakarta text-center font-medium text-[0.972vw] text-black w-[15%]">
                   <button
                     onClick={() => setSelectedToken(token)}
-                    className="bg-purple-500 text-white px-[0.5vw] py-[0.2vw] rounded-[0.3vw] hover:bg-purple-600 text-[0.8vw]"
+                    className="bg-purple-500 text-white px-[0.5vw] py-[0.2vw] rounded-[0.2vw] hover:bg-purple-700 text-[0.8vw]"
                   >
                     Action
                   </button>
@@ -258,9 +163,9 @@ const RegisteredOperators = () => {
             id: 0,
             name: "",
             address: "",
-            totalSupply: "",
-            reserve: "",
-            restake: "",
+            totalSupply: 0,
+            reserve: 0,
+            restake: 0,
           }
         }
         walletClient={walletClient}

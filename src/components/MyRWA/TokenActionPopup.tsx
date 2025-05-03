@@ -199,7 +199,7 @@ const TokenActionPopup = ({
       );
       const tx = await avs.stakeForToken(token.address, {
         value: ethers.parseEther(stakeAmount),
-        gasLimit: 500000, // Increased gas limit
+        gasLimit: 500000,
       });
       console.log("Stake TX:", tx);
       await tx.wait();
@@ -263,7 +263,7 @@ const TokenActionPopup = ({
       const amount = ethers.parseEther(unstakeAmount);
       console.log("Unstake amount (wei):", amount.toString());
       const tx = await avs.unstakeFromToken(token.address, amount, {
-        gasLimit: 500000, // Increased gas limit
+        gasLimit: 500000,
       });
       console.log("Unstake TX:", tx);
       await tx.wait();
@@ -286,11 +286,19 @@ const TokenActionPopup = ({
       setErrorMessage("Please connect your wallet");
       return;
     }
+    if (!tokenInfo) {
+      setErrorMessage("Token information not loaded");
+      return;
+    }
 
     try {
       setIsLoading(true);
       setErrorMessage(null);
-      console.log("Claiming rewards for:", token.address);
+      console.log("Claiming rewards for:", {
+        token: token.address,
+        pendingRewards: tokenInfo.pendingRewards,
+      });
+
       const provider = new ethers.BrowserProvider(walletClient);
       const signer = await provider.getSigner();
       const avs = new ethers.Contract(
@@ -298,14 +306,31 @@ const TokenActionPopup = ({
         VeristableAVSABI,
         signer
       );
+
+      // Check if contract is paused
+      const isPaused = await avs.paused();
+      if (isPaused) {
+        setErrorMessage("Cannot claim rewards: Contract is paused");
+        return;
+      }
+
+      // Check user stake
+      const userStake = await avs.tokenStakes(token.address, account);
+      console.log("User stake:", ethers.formatUnits(userStake, 18));
+      if (userStake === 0n) {
+        setErrorMessage("No active stake found. Cannot claim rewards.");
+        return;
+      }
+
+      // Execute claim
       const tx = await avs.claimTokenRewards(token.address, {
-        gasLimit: 500000, // Increased gas limit
+        gasLimit: 600000, // Increased gas limit
       });
       console.log("Claim TX:", tx);
       await tx.wait();
       alert("Rewards successfully claimed!");
       // Refresh token info
-      fetchTokenInfo();
+      await fetchTokenInfo();
     } catch (err: any) {
       console.error("Error claiming rewards:", err);
       setErrorMessage(
@@ -354,7 +379,7 @@ const TokenActionPopup = ({
       console.log("Distribute amount (wei):", amount.toString());
       const tx = await avs.distributeTokenRewards(token.address, {
         value: amount,
-        gasLimit: 500000, // Increased gas limit
+        gasLimit: 500000,
       });
       console.log("Distribute TX:", tx);
       await tx.wait();
@@ -676,12 +701,8 @@ const TokenActionPopup = ({
                   <div className="mb-4">
                     <button
                       onClick={claimTokenRewards}
-                      className="w-full bg-yellow-600 text-white px-4 py-2 rounded hover:bg-yellow-700 text-[0.833vw] font-jakarta disabled:bg-yellow-300"
-                      disabled={
-                        isLoading ||
-                        !tokenInfo ||
-                        parseFloat(tokenInfo.pendingRewards) <= 0
-                      }
+                      className="w-full bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-700 text-[0.833vw] font-jakarta disabled:bg-blue-300"
+                      disabled={isLoading || !tokenInfo}
                     >
                       {isLoading ? "Processing..." : "Claim Rewards"}
                     </button>
@@ -703,7 +724,7 @@ const TokenActionPopup = ({
                   <div className="flex justify-end">
                     <button
                       onClick={distributeTokenRewards}
-                      className="bg-cyan-600 text-white px-4 py-2 rounded hover:bg-cyan-700 text-[0.833vw] font-jakarta disabled:bg-cyan-300"
+                      className="w-full bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-700 text-[0.833vw] font-jakarta disabled:bg-blue-300"
                       disabled={
                         isLoading ||
                         !depositRewardAmount ||
