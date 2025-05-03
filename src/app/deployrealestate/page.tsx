@@ -172,9 +172,9 @@ export default function DeployPage() {
       // Coba ambil tokenAddress dari event
       let tokenAddress: string | undefined;
       const parsedLogs = receipt.logs
-        .map((log, index) => {
+        .map((log: ethers.Log, index: number) => {
           try {
-            const parsed = factory.interface.parseLog(log);
+            const parsed = factory.interface.parseLog(log) as ethers.LogDescription | null;
             console.log(`Parsed log ${index}:`, parsed);
             return parsed;
           } catch (error) {
@@ -182,7 +182,7 @@ export default function DeployPage() {
             return null;
           }
         })
-        .filter((parsed) => parsed && parsed.name === "TokenCreated");
+        .filter((parsed: ethers.LogDescription | null) => parsed && parsed.name === "TokenCreated");
 
       if (parsedLogs.length > 0) {
         tokenAddress = parsedLogs[0]?.args.tokenAddress;
@@ -197,7 +197,7 @@ export default function DeployPage() {
 
         // Cari token baru yang tidak ada di tokensBefore
         const newToken = tokensAfter.find(
-          (token) => !tokensBefore.includes(token)
+          (token: string) => !tokensBefore.includes(token)
         );
         if (newToken) {
           tokenAddress = newToken;
