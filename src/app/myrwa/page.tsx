@@ -1,15 +1,12 @@
 "use client";
 
-import Image from "next/image";
-import Button from "@/components/Button";
+// import Image from "next/image";
+// import Button from "@/components/Button";
 import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import ProjectRecent from "@/components/MyRWA/ProjectRecent";
 import AllTeams from "@/components/MyRWA/AllTeams";
 import HeroRWA from "@/components/MyRWA/Hero";
-import AfterDeploy from "@/components/MyRWA/AfterDeploy";
-import TokenCard from "@/components/MyRWA/TokenCard";
-import AnalyticsCard from "@/components/MyRWA/AnalyticsCard";
 import { createClient } from "@supabase/supabase-js";
 
 // Supabase Client Setup
@@ -132,7 +129,7 @@ const MyRWA = () => {
 
   return (
     <div className="min-h-screen bg-white pt-[6vw] px-4 lg:px-0 font-jakarta">
-      <section className="w-[90%] mx-auto py-12 flex flex-col gap-[2vw]">
+      <section className="w-[90%] mx-auto py-12 flex flex-col justify-center items-center gap-[2vw]">
         {/* Bagian Atas */}
         <HeroRWA />
         <ProjectRecent
