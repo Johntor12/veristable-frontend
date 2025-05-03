@@ -9,7 +9,10 @@ type TokenPopupProps = {
   onClose: () => void;
   onSubmit: (amount: number) => void;
   totalSupply: number;
+  reserveBalance: number;
   symbol: string;
+  isLoading: boolean;
+  errorMessage: string | null;
 };
 
 const TokenPopup = ({
@@ -18,7 +21,10 @@ const TokenPopup = ({
   onClose,
   onSubmit,
   totalSupply,
+  reserveBalance,
   symbol,
+  isLoading,
+  errorMessage,
 }: TokenPopupProps) => {
   const [amount, setAmount] = useState("");
 
@@ -32,7 +38,6 @@ const TokenPopup = ({
 
     onSubmit(amountNum);
     setAmount("");
-    onClose();
   };
 
   if (!isOpen) return null;
@@ -53,7 +58,7 @@ const TokenPopup = ({
               : "Current Token Supply"}
           </label>
           <p className="w-full font-jakarta text-[0.972vw] text-[#717680] border px-3 py-2 rounded bg-gray-100">
-            {totalSupply} {symbol}
+            {type === "Reserve" ? reserveBalance : totalSupply} {symbol}
           </p>
         </div>
         <div className="mb-6">
@@ -62,18 +67,27 @@ const TokenPopup = ({
           </label>
           <input
             type="number"
+            step="0.0001"
+            min="0.0001"
             placeholder={`Enter amount to ${type.toLowerCase()}`}
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
             className="w-full font-jakarta text-[0.972vw] text-[#717680] border px-3 py-2 rounded bg-white"
+            disabled={isLoading}
           />
         </div>
+        {errorMessage && (
+          <p className="text-red-500 font-jakarta text-[0.833vw] mb-4">
+            {errorMessage}
+          </p>
+        )}
         <div className="w-full flex justify-end">
           <button
             onClick={handleSubmit}
-            className="bg-purple-700 text-white px-4 py-2 rounded hover:bg-purple-800 text-[0.833vw] font-jakarta"
+            className="bg-purple-700 text-white px-4 py-2 rounded hover:bg-purple-800 text-[0.833vw] font-jakarta disabled:bg-purple-300"
+            disabled={isLoading || !amount || parseFloat(amount) <= 0}
           >
-            {type} Token
+            {isLoading ? "Processing..." : `${type} Token`}
           </button>
         </div>
       </div>
