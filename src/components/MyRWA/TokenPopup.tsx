@@ -38,13 +38,13 @@ const TokenPopup = ({
   totalSupply,
   symbol,
 }: TokenPopupProps) => {
-  const [amount, setAmount] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [amountReserve, setAmountReserve] = useState<number | null>(null);
+  const [isVerified, setIsVerified] = useState(false);
 
   const handleConnectBank = async () => {
     if (!username || !password) {
@@ -59,7 +59,7 @@ const TokenPopup = ({
       console.log("Sending login request to:", "https://mockup-backend-seven.vercel.app/login");
       console.log("Request body:", { username, password });
 
-      const response = await fetch("https://mockup-backend-seven.vercel.app/login", {
+      const loginResponse = await fetch("https://mockup-backend-seven.vercel.app/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -67,105 +67,84 @@ const TokenPopup = ({
         body: JSON.stringify({ username, password }),
       });
 
-      console.log("Response status:", response.status);
-      if (!response.ok) {
-        const text = await response.text();
-        throw new Error(`HTTP error! status: ${response.status}, message: ${text}`);
+      console.log("Login response status:", loginResponse.status);
+      if (!loginResponse.ok) {
+        const text = await loginResponse.text();
+        throw new Error(`HTTP error! status: ${loginResponse.status}, message: ${text}`);
       }
 
-      const data = await response.json();
-      console.log("Response data:", data);
+      const loginData = await loginResponse.json();
+      console.log("Login response data:", loginData);
 
-      if (!data.token) {
+      if (!loginData.token) {
         throw new Error("No token received from login");
       }
 
       // Simpan token ke localStorage
-      localStorage.setItem("jwtToken", data.token);
+      localStorage.setItem("jwtToken", loginData.token);
 
       // Dekode token untuk mendapatkan balance
-      const decodedToken = decodeJwtToken(data.token);
+      const decodedToken = decodeJwtToken(loginData.token);
       const amountReserveFromApi = decodedToken.balance || 0;
       setAmountReserve(amountReserveFromApi);
-      setAmount(amountReserveFromApi.toString());
+
+      // Langsung verifikasi reserve
+      const jwtToken = loginData.token;
+      console.log("Sending verify request to:", "https://veristable-render-cool-frog-1562.fly.dev/verify");
+      console.log("Request body:", { RWASupply: totalSupply });
+
+      const verifyResponse = await fetch("https://veristable-render-cool-frog-1562.fly.dev/verify", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${jwtToken}`,
+        },
+        body: JSON.stringify({ RWASupply: totalSupply }),
+      });
+
+      console.log("Verify response status:", verifyResponse.status);
+      const verifyData = await verifyResponse.json();
+      console.log("Verify response data:", verifyData);
+
+      if (!verifyResponse.ok) {
+        throw new Error(`Verification failed! status: ${verifyResponse.status}, message: ${verifyData.message || 'Unknown error'}`);
+      }
+
+      if (!verifyData.success) {
+        throw new Error(verifyData.message || 'Verification failed');
+      }
+
+      setIsVerified(true);
       setIsConnected(true);
       setUsername("");
       setPassword("");
     } catch (err: any) {
-      console.error("Login error:", err);
-      setError(`Failed to connect to bank: ${err.message}`);
+      console.error("Error:", err);
+      setError(`Failed to connect to bank or verify reserve: ${err.message}`);
+      setIsConnected(true); // Tetap set isConnected untuk menampilkan pesan
+      setIsVerified(false);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleSubmit = async () => {
-    const amountNum = parseFloat(amount);
+  const handleSubmit = () => {
+    if (type === "Reserve" && !isVerified) {
+      setError("Verification failed. Cannot proceed with reserve.");
+      return;
+    }
 
+    const amountNum = parseFloat(String(amountReserve || 0));
     if (isNaN(amountNum) || amountNum <= 0) {
-      setError("Please enter a valid amount greater than 0");
+      setError("Invalid amount for reserve");
       return;
     }
 
-    if (type === "Reserve" && !isConnected) {
-      setError("Please connect to your bank account first");
-      return;
-    }
-
-    if (type === "Reserve") {
-      const jwtToken = localStorage.getItem("jwtToken");
-      if (!jwtToken) {
-        setError("No JWT token found. Please connect to your bank account again.");
-        return;
-      }
-
-      setIsLoading(true);
-      setError(null);
-
-      try {
-        console.log("Sending verify request to:", "https://veristable-render-cool-frog-1562.fly.dev/verify");
-        console.log("Request body:", { RWASupply: amountNum });
-
-        const verifyResponse = await fetch(
-          "https://veristable-render-cool-frog-1562.fly.dev/verify",
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${jwtToken}`,
-            },
-            body: JSON.stringify({ RWASupply: amountNum }),
-          }
-        );
-
-        console.log("Verify response status:", verifyResponse.status);
-        const verifyData = await verifyResponse.json();
-        console.log("Verify response data:", verifyData);
-
-        if (!verifyResponse.ok) {
-          throw new Error(`Verification failed! status: ${verifyResponse.status}, message: ${verifyData.message || 'Unknown error'}`);
-        }
-
-        if (!verifyData.success) {
-          throw new Error(verifyData.message || 'Verification failed');
-        }
-
-        onSubmit(amountNum);
-        setAmount("");
-        setIsConnected(false);
-        setAmountReserve(null);
-        onClose();
-      } catch (err: any) {
-        console.error("Verify error:", err);
-        setError(`Failed to verify reserve: ${err.message}`);
-      } finally {
-        setIsLoading(false);
-      }
-    } else {
-      onSubmit(amountNum);
-      setAmount("");
-      onClose();
-    }
+    onSubmit(amountNum);
+    setIsConnected(false);
+    setIsVerified(false);
+    setAmountReserve(null);
+    onClose();
   };
 
   if (!isOpen) return null;
@@ -182,11 +161,7 @@ const TokenPopup = ({
 
         {type === "Reserve" && (
           <div className="mb-6">
-            {isConnected ? (
-              <p className="text-green-600 text-[0.972vw] font-semibold">
-                Bank Account Connected! Balance: {amountReserve || 0} {symbol}
-              </p>
-            ) : (
+            {!isConnected ? (
               <>
                 <div className="mb-4">
                   <label className="block text-[0.833vw] text-gray-600 mb-1">
@@ -223,10 +198,14 @@ const TokenPopup = ({
                     {isLoading ? "Connecting..." : "Connect to Account Bank"}
                   </button>
                 </div>
-                {error && (
-                  <p className="text-red-500 text-[0.833vw] mb-4">{error}</p>
-                )}
               </>
+            ) : (
+              <p className={`text-[0.972vw] font-semibold mb-4 ${isVerified ? 'text-green-600' : 'text-red-500'}`}>
+                Bank Account Connected! {isVerified ? '' : 'Failed to Verify: ' + (error || 'Unknown error')}
+              </p>
+            )}
+            {error && !isConnected && (
+              <p className="text-red-500 text-[0.833vw] mb-4">{error}</p>
             )}
           </div>
         )}
@@ -247,17 +226,17 @@ const TokenPopup = ({
           </label>
           <input
             type="number"
-            value={amount}
+            value={amountReserve || ""}
             readOnly
             className="w-full text-[0.972vw] text-[#717680] border px-3 py-2 rounded bg-white"
-            disabled={isLoading || (type === "Reserve" && isConnected)}
+            disabled={isLoading || (type === "Reserve" && !isConnected)}
           />
         </div>
         <div className="w-full flex justify-end">
           <button
             onClick={handleSubmit}
             className="bg-purple-700 text-white px-4 py-2 rounded hover:bg-purple-800 text-[0.833vw] disabled:bg-purple-300"
-            disabled={isLoading || (type === "Reserve" && !isConnected)}
+            disabled={isLoading || (type === "Reserve" && (!isConnected || !isVerified))}
           >
             {type} Token
           </button>
