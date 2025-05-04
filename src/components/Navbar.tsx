@@ -54,7 +54,7 @@ const Navbar = () => {
           <a href="/explore-rwa" className="hover:text-purple-600">
             ExploreRWA
           </a>
-          <a href="/my-rwa" className="hover:text-purple-600">
+          <a href="/myrwa" className="hover:text-purple-600">
             MyRWA
           </a>
           <a href="/dashboard" className="hover:text-purple-600">

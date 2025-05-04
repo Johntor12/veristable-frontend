@@ -211,7 +211,11 @@ const RWADetailPage = () => {
 
   return (
     <div className="min-h-screen w-full bg-white pt-[6vw] px-4 lg:px-0 font-jakarta">
+<<<<<<< askar-myrwa
       <section className="w-[90%] mx-auto py-12 flex flex-col gap-[5vw]">
+=======
+      <section className="w-[90%] mx-auto py-12 flex flex-col justify-center items-center gap-[1vw]">
+>>>>>>> test-merge-main
         <RWAInformation data={rwaData} />
         <div className="w-full flex flex-row gap-[0.833vw]">
           <ContractChecklist steps={steps} />
