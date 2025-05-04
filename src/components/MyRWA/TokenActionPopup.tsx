@@ -66,7 +66,7 @@ interface TokenActionPopupProps {
   isOpen: boolean;
   onClose: () => void;
   token: Token;
-  walletClient: any;
+  walletClient: string;
   account: string | undefined;
 }
 
@@ -111,7 +111,7 @@ export default function TokenActionPopup({
         });
       if (error)
         throw new Error(`Failed to save to Supabase: ${error.message}`);
-    } catch (err: any) {
+    } catch (err: string) {
       console.error("Error saving to Supabase:", err);
       setErrorMessage(`Failed to save to database: ${err.message}`);
     }
@@ -191,7 +191,7 @@ export default function TokenActionPopup({
         symbol,
         decimals,
       });
-    } catch (err: any) {
+    } catch (err: string) {
       console.error("Error fetching token info:", err);
       setErrorMessage(`Failed to load token information: ${err.message}`);
     } finally {
@@ -263,7 +263,7 @@ export default function TokenActionPopup({
       setStakeAmount("");
       alert("ETH successfully staked!");
       await fetchTokenInfo();
-    } catch (err: any) {
+    } catch (err: string) {
       console.error("Error staking ETH:", err);
       setErrorMessage(`Failed to stake: ${err.reason || err.message}`);
     } finally {
@@ -346,7 +346,7 @@ export default function TokenActionPopup({
       setUnstakeAmount("");
       alert("ETH successfully unstaked!");
       await fetchTokenInfo();
-    } catch (err: any) {
+    } catch (err: string) {
       console.error("Error unstaking ETH:", err);
       setErrorMessage(`Failed to unstake: ${err.reason || err.message}`);
     } finally {
@@ -423,7 +423,7 @@ export default function TokenActionPopup({
 
       alert("Rewards successfully claimed!");
       await fetchTokenInfo();
-    } catch (err: any) {
+    } catch (err: string) {
       console.error("Error claiming rewards:", err);
       setErrorMessage(`Failed to claim rewards: ${err.reason || err.message}`);
     } finally {
@@ -498,7 +498,7 @@ export default function TokenActionPopup({
       setDepositRewardAmount("");
       alert("Rewards successfully distributed!");
       await fetchTokenInfo();
-    } catch (err: any) {
+    } catch (err: string) {
       console.error("Error distributing rewards:", err);
       setErrorMessage(
         `Failed to distribute rewards: ${err.reason || err.message}`
