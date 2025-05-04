@@ -7,7 +7,6 @@ import Image from "next/image";
 import { IoMdCopy, IoIosOpen } from "react-icons/io";
 import { HiCheck } from "react-icons/hi";
 import DummyHouse from "@/assets/MyRWA/Dummy_Image_RWA.png";
-import RegisteredOperators from "@/components/MyRWA/RegisteredOperators";
 import TokenCard from "@/components/MyRWA/TokenCard";
 import AnalyticsCard from "@/components/MyRWA/AnalyticsCard";
 import TeamCard from "@/components/MyRWA/TeamCard";
