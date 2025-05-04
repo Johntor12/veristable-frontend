@@ -10,7 +10,7 @@ export default function DashboardPage() {
         <HeroDashboard />
         <TotalAssetsSection />
         <ReservesChart />
-        <RegisteredOperators variant="dashboard" />
+        <RegisteredOperators />
       </section>
     </div>
   );
