@@ -207,11 +207,13 @@ const TokenCard = ({
       }
 
       console.log("Successfully saved to Supabase real_estate table:", data);
-    } catch (err: string) {
+    } catch (err: unknown) {
       console.error("Error saving to Supabase:", err);
-      setErrorMessage(
-        `Failed to save to Supabase: ${err.message || "Unknown error"}`
-      );
+      if (err instanceof Error) {
+        setErrorMessage(
+          `Failed to save to Supabase: ${err.message || "Unknown error"}`
+        );
+      }
     }
   };
 
@@ -285,11 +287,13 @@ const TokenCard = ({
           symbol,
           lastUpdateTimestamp: new Date(timestamp * 1000).toLocaleString(),
         });
-      } catch (err: string) {
+      } catch (err: unknown) {
         console.error("Error fetching token data:", err);
-        setErrorMessage(
-          `Failed to load token data: ${err.reason || err.message || "Unknown error"}`
-        );
+        if (err instanceof Error) {
+          setErrorMessage(
+            `Failed to load token data: ${err.message || "Unknown error"}`
+          );
+        }
         setReserveBalance(0);
         setLastUpdateTimestamp("N/A");
       } finally {
@@ -360,11 +364,13 @@ const TokenCard = ({
 
       setErrorMessage(null);
       alert(`Successfully minted ${amount} ${symbol}!`);
-    } catch (err: string) {
+    } catch (err: unknown) {
       console.error("Error minting token:", err);
-      setErrorMessage(
-        `Failed to mint token: ${err.reason || err.message || "Unknown error"}`
-      );
+      if (err instanceof Error) {
+        setErrorMessage(
+          `Failed to mint token: ${err.message || "Unknown error"}`
+        );
+      }
     } finally {
       setIsLoading(false);
     }
@@ -435,11 +441,13 @@ const TokenCard = ({
 
       setErrorMessage(null);
       alert(`Successfully burned ${amount} ${symbol}!`);
-    } catch (err: string) {
+    } catch (err: unknown) {
       console.error("Error burning token:", err);
-      setErrorMessage(
-        `Failed to burn token: ${err.reason || err.message || "Unknown error"}`
-      );
+      if (err instanceof Error) {
+        setErrorMessage(
+          `Failed to burn token: ${err.message || "Unknown error"}`
+        );
+      }
     } finally {
       setIsLoading(false);
     }
@@ -511,15 +519,15 @@ const TokenCard = ({
 
       setErrorMessage(null);
       alert(`Successfully set reserve balance to ${amount} ${symbol}!`);
-    } catch (err: string) {
+    } catch (err: unknown) {
       console.error("Error setting reserve balance:", err);
-      let userMessage = "Failed to set reserve balance.";
-      if (err.reason) {
-        userMessage += ` Reason: ${err.reason}`;
-      } else if (err.message) {
-        userMessage += ` Error: ${err.message}`;
+      if (err instanceof Error) {
+        let userMessage = "Failed to set reserve balance.";
+        if (err.message) {
+          userMessage += ` Error: ${err.message}`;
+        }
+        setErrorMessage(userMessage);
       }
-      setErrorMessage(userMessage);
     } finally {
       setIsLoading(false);
     }

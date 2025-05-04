@@ -55,7 +55,10 @@ const RegisteredOperators = () => {
         id: index + 1,
         name: item.name || "Unknown",
         address: item.address || "-",
-        totalSupply: item.totalSupply ? Number(item.totalSupply) : "-",
+        totalSupply:
+          typeof item.totalSupply === "number"
+            ? item.totalSupply
+            : Number(item.totalSupply ?? 0),
         reserve: item.reserve ? Number(item.reserve) : "-",
         restake: item.restake ? Number(item.restake) : "-",
       }));
@@ -199,12 +202,12 @@ const RegisteredOperators = () => {
             id: selectedToken.id,
             name: selectedToken.name,
             address: selectedToken.address,
-            totalSupply: selectedToken.totalSupply,
-            reserve: selectedToken.reserve,
-            restake: selectedToken.restake,
+            totalSupply: selectedToken.totalSupply.toString(),
+            reserve: selectedToken.reserve.toString(),
+            restake: selectedToken.restake.toString(),
           }}
           walletClient={walletClient}
-          account={account}
+          account={account as `0x${string}`}
         />
       )}
     </div>
