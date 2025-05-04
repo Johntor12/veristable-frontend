@@ -1,5 +1,4 @@
 "use client";
-
 import { IoClose } from "react-icons/io5";
 import { useState, useEffect } from "react";
 import { ethers } from "ethers";
@@ -8,13 +7,6 @@ import { createClient } from "@supabase/supabase-js";
 // Supabase Configuration
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
-
-// Validate Supabase configuration
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.error(
-    "Supabase configuration missing. Please set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in .env.local"
-  );
-}
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 // Smart Contract ABI
@@ -23,14 +15,11 @@ const TokenABI = [
   "function decimals() public view returns (uint256)",
   "function symbol() public view returns (string)",
   "function balanceOf(address account) public view returns (uint256)",
-  "function approve(address spender, uint256 amount) external returns (bool)",
 ];
-
 const ReserveABI = [
   "function getReserveBalance(address tokenAddress) external view returns (uint256)",
   "function getLastUpdateTimestamp() external view returns (uint256)",
 ];
-
 const VeristableAVSABI = [
   "function stakeForToken(address token) external payable",
   "function unstakeFromToken(address token, uint256 amount) external",
@@ -81,13 +70,13 @@ interface TokenActionPopupProps {
   account: string | undefined;
 }
 
-const TokenActionPopup = ({
+export default function TokenActionPopup({
   isOpen,
   onClose,
   token,
   walletClient,
   account,
-}: TokenActionPopupProps) => {
+}: TokenActionPopupProps) {
   const [tokenInfo, setTokenInfo] = useState<TokenInfo | null>(null);
   const [stakeAmount, setStakeAmount] = useState("");
   const [unstakeAmount, setUnstakeAmount] = useState("");
@@ -104,17 +93,7 @@ const TokenActionPopup = ({
     onchainReserveBalance: number,
     onchainRestake: number
   ) => {
-    if (!ethers.isAddress(token.address)) {
-      console.error("Invalid contract address for Supabase:", token.address);
-      setErrorMessage("Invalid contract address for saving to Supabase");
-      return;
-    }
-
-    if (!ethers.isAddress(account || "")) {
-      console.error("Invalid owner address for Supabase:", account);
-      setErrorMessage("Invalid owner address for saving to Supabase");
-      return;
-    }
+    if (!ethers.isAddress(token.address)) return;
 
     const realEstateData = {
       address: token.address,
@@ -125,496 +104,28 @@ const TokenActionPopup = ({
     };
 
     try {
-      console.log(
-        "Attempting to save to Supabase real_estate table:",
-        realEstateData
-      );
-
-      // Check if row exists
-      const { data: existingData, error: selectError } = await supabase
+      const { error } = await supabase
         .from("real_estate")
-        .select("address")
-        .eq("address", token.address)
-        .single();
-
-      console.log("Supabase select response:", { existingData, selectError });
-
-      if (selectError && selectError.code !== "PGRST116") {
-        console.error("Supabase select error:", selectError);
-        throw new Error(
-          `Failed to check existing data: ${selectError.message || JSON.stringify(selectError)}`
-        );
-      }
-
-      let data, error;
-      if (existingData) {
-        // Update existing row
-        ({ data, error } = await supabase
-          .from("real_estate")
-          .update({
-            owner: account,
-            reserve: Math.floor(onchainReserveBalance),
-            totalSupply: Math.floor(onchainTotalSupply),
-            restake: onchainRestake,
-          })
-          .eq("address", token.address));
-      } else {
-        // Insert new row
-        ({ data, error } = await supabase
-          .from("real_estate")
-          .insert([realEstateData]));
-      }
-
-      console.log("Supabase operation response:", { data, error });
-
-      if (error) {
-        console.error("Supabase operation error:", error);
-        throw new Error(
-          `Failed to save to Supabase: ${error.message || JSON.stringify(error)}`
-        );
-      }
-
-      console.log("Successfully saved to Supabase real_estate table:", data);
+        .upsert([realEstateData], {
+          onConflict: "address",
+        });
+      if (error)
+        throw new Error(`Failed to save to Supabase: ${error.message}`);
     } catch (err: any) {
       console.error("Error saving to Supabase:", err);
-      setErrorMessage(
-        `Failed to save to Supabase: ${err.message || "Unknown error"}`
-      );
-    }
-  };
-
-  useEffect(() => {
-    const fetchTokenInfo = async () => {
-      if (!walletClient || !account || !ethers.isAddress(token.address)) return;
-
-      try {
-        setIsLoading(true);
-        setErrorMessage(null);
-        const provider = new ethers.BrowserProvider(walletClient);
-        const tokenContract = new ethers.Contract(
-          token.address,
-          TokenABI,
-          provider
-        );
-        const reserveContract = new ethers.Contract(
-          reserveAddress,
-          ReserveABI,
-          provider
-        );
-        const avsContract = new ethers.Contract(
-          veristableAVSAddress,
-          VeristableAVSABI,
-          provider
-        );
-
-        const [
-          decimalsBigInt,
-          symbol,
-          totalSupplyRaw,
-          reserveBalanceRaw,
-          timestampBigInt,
-          balanceRaw,
-          userStake,
-          totalStaked,
-          rewardsPool,
-          pendingRewards,
-          minStake,
-          isPaused,
-        ] = await Promise.all([
-          tokenContract.decimals(),
-          tokenContract.symbol(),
-          tokenContract.totalSupply(),
-          reserveContract.getReserveBalance(token.address),
-          reserveContract.getLastUpdateTimestamp(),
-          tokenContract.balanceOf(account),
-          avsContract.tokenStakes(token.address, account),
-          avsContract.totalTokenStakes(token.address),
-          avsContract.tokenRewardsPools(token.address),
-          avsContract.pendingTokenRewards(token.address, account),
-          avsContract.MIN_TOKEN_STAKE(),
-          avsContract.paused(),
-        ]);
-
-        if (isPaused) {
-          setErrorMessage("Contract is paused. Actions are disabled.");
-          return;
-        }
-
-        const decimals = Number(decimalsBigInt);
-        setTokenInfo({
-          name: token.name,
-          address: token.address,
-          totalSupply: `${parseFloat(ethers.formatUnits(totalSupplyRaw, decimals)).toFixed(2)} ${symbol}`,
-          reserve: `${parseFloat(ethers.formatUnits(reserveBalanceRaw, decimals)).toFixed(2)} ${symbol}`,
-          userBalance: `${parseFloat(ethers.formatUnits(balanceRaw, decimals)).toFixed(2)} ${symbol}`,
-          userStake: `${parseFloat(ethers.formatUnits(userStake, 18)).toFixed(4)} ETH`,
-          totalStaked: `${parseFloat(ethers.formatUnits(totalStaked, 18)).toFixed(4)} ETH`,
-          rewardsPool: `${parseFloat(ethers.formatUnits(rewardsPool, 18)).toFixed(4)} ETH`,
-          pendingRewards: `${parseFloat(ethers.formatUnits(pendingRewards, 18)).toFixed(4)} ETH`,
-          minStake: `${parseFloat(ethers.formatUnits(minStake, 18)).toFixed(4)} ETH`,
-          lastUpdate: new Date(Number(timestampBigInt) * 1000).toLocaleString(),
-          symbol,
-          decimals,
-        });
-      } catch (err: any) {
-        console.error("Error fetching token info:", err);
-        setErrorMessage(
-          `Failed to load token information: ${err.message || "Unknown error"}`
-        );
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    if (isOpen) fetchTokenInfo();
-  }, [isOpen, token, walletClient, account]);
-
-  const stakeForToken = async () => {
-    if (
-      !walletClient ||
-      !account ||
-      !stakeAmount ||
-      parseFloat(stakeAmount) <= 0
-    ) {
-      setErrorMessage("Please enter a valid stake amount");
-      return;
-    }
-    if (tokenInfo && parseFloat(stakeAmount) < parseFloat(tokenInfo.minStake)) {
-      setErrorMessage(`Stake amount must be at least ${tokenInfo.minStake}`);
-      return;
-    }
-
-    try {
-      setIsLoading(true);
-      setErrorMessage(null);
-      console.log("Staking:", { token: token.address, amount: stakeAmount });
-      const provider = new ethers.BrowserProvider(walletClient);
-      const signer = await provider.getSigner();
-      const avs = new ethers.Contract(
-        veristableAVSAddress,
-        VeristableAVSABI,
-        signer
-      );
-      const tokenContract = new ethers.Contract(
-        token.address,
-        TokenABI,
-        provider
-      );
-      const reserveContract = new ethers.Contract(
-        reserveAddress,
-        ReserveABI,
-        provider
-      );
-
-      const tx = await avs.stakeForToken(token.address, {
-        value: ethers.parseEther(stakeAmount),
-        gasLimit: 500000,
-      });
-      console.log("Stake TX:", tx);
-      await tx.wait();
-
-      // Ambil data onchain terbaru
-      const totalSupplyRaw = await tokenContract.totalSupply();
-      const newTotalSupply = parseFloat(
-        ethers.formatUnits(totalSupplyRaw, tokenInfo?.decimals || 18)
-      );
-      const reserveBalanceRaw = await reserveContract.getReserveBalance(
-        token.address
-      );
-      const newReserveBalance = parseFloat(
-        ethers.formatUnits(reserveBalanceRaw, tokenInfo?.decimals || 18)
-      );
-      const totalStaked = await avs.totalTokenStakes(token.address);
-      const newRestake = parseFloat(ethers.formatUnits(totalStaked, 18));
-
-      // Simpan ke Supabase dengan data onchain
-      await saveToSupabase(newTotalSupply, newReserveBalance, newRestake);
-
-      setStakeAmount("");
-      alert("ETH successfully staked!");
-      // Refresh token info
-      await fetchTokenInfo();
-    } catch (err: any) {
-      console.error("Error staking ETH:", err);
-      setErrorMessage(
-        `Failed to stake: ${err.reason || err.message || "Unknown error"}`
-      );
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const unstakeFromToken = async () => {
-    if (
-      !walletClient ||
-      !account ||
-      !unstakeAmount ||
-      parseFloat(unstakeAmount) <= 0
-    ) {
-      setErrorMessage("Please enter a valid unstake amount");
-      return;
-    }
-    if (
-      tokenInfo &&
-      parseFloat(unstakeAmount) > parseFloat(tokenInfo.userStake)
-    ) {
-      setErrorMessage(
-        `Unstake amount cannot exceed your stake (${tokenInfo.userStake})`
-      );
-      return;
-    }
-
-    try {
-      setIsLoading(true);
-      setErrorMessage(null);
-      console.log("Unstaking:", {
-        token: token.address,
-        amount: unstakeAmount,
-      });
-      const provider = new ethers.BrowserProvider(walletClient);
-      const signer = await provider.getSigner();
-      const avs = new ethers.Contract(
-        veristableAVSAddress,
-        VeristableAVSABI,
-        signer
-      );
-      const tokenContract = new ethers.Contract(
-        token.address,
-        TokenABI,
-        provider
-      );
-      const reserveContract = new ethers.Contract(
-        reserveAddress,
-        ReserveABI,
-        provider
-      );
-
-      // Check if contract is paused
-      const isPaused = await avs.paused();
-      if (isPaused) {
-        setErrorMessage("Cannot unstake: Contract is paused");
-        return;
-      }
-
-      // Parse amount in wei (assuming amount is in ETH)
-      const amount = ethers.parseEther(unstakeAmount);
-      console.log("Unstake amount (wei):", amount.toString());
-      const tx = await avs.unstakeFromToken(token.address, amount, {
-        gasLimit: 500000,
-      });
-      console.log("Unstake TX:", tx);
-      await tx.wait();
-
-      // Ambil data onchain terbaru
-      const totalSupplyRaw = await tokenContract.totalSupply();
-      const newTotalSupply = parseFloat(
-        ethers.formatUnits(totalSupplyRaw, tokenInfo?.decimals || 18)
-      );
-      const reserveBalanceRaw = await reserveContract.getReserveBalance(
-        token.address
-      );
-      const newReserveBalance = parseFloat(
-        ethers.formatUnits(reserveBalanceRaw, tokenInfo?.decimals || 18)
-      );
-      const totalStaked = await avs.totalTokenStakes(token.address);
-      const newRestake = parseFloat(ethers.formatUnits(totalStaked, 18));
-
-      // Simpan ke Supabase dengan data onchain
-      await saveToSupabase(newTotalSupply, newReserveBalance, newRestake);
-
-      setUnstakeAmount("");
-      alert("ETH successfully unstaked!");
-      // Refresh token info
-      await fetchTokenInfo();
-    } catch (err: any) {
-      console.error("Error unstaking ETH:", err);
-      setErrorMessage(
-        `Failed to unstake: ${err.reason || err.message || "Unknown error"}`
-      );
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const claimTokenRewards = async () => {
-    if (!walletClient || !account) {
-      setErrorMessage("Please connect your wallet");
-      return;
-    }
-    if (!tokenInfo) {
-      setErrorMessage("Token information not loaded");
-      return;
-    }
-
-    try {
-      setIsLoading(true);
-      setErrorMessage(null);
-      console.log("Claiming rewards for:", {
-        token: token.address,
-        pendingRewards: tokenInfo.pendingRewards,
-      });
-
-      const provider = new ethers.BrowserProvider(walletClient);
-      const signer = await provider.getSigner();
-      const avs = new ethers.Contract(
-        veristableAVSAddress,
-        VeristableAVSABI,
-        signer
-      );
-      const tokenContract = new ethers.Contract(
-        token.address,
-        TokenABI,
-        provider
-      );
-      const reserveContract = new ethers.Contract(
-        reserveAddress,
-        ReserveABI,
-        provider
-      );
-
-      // Check if contract is paused
-      const isPaused = await avs.paused();
-      if (isPaused) {
-        setErrorMessage("Cannot claim rewards: Contract is paused");
-        return;
-      }
-
-      // Check user stake
-      const userStake = await avs.tokenStakes(token.address, account);
-      console.log("User stake:", ethers.formatUnits(userStake, 18));
-      if (userStake === 0n) {
-        setErrorMessage("No active stake found. Cannot claim rewards.");
-        return;
-      }
-
-      // Execute claim
-      const tx = await avs.claimTokenRewards(token.address, {
-        gasLimit: 600000,
-      });
-      console.log("Claim TX:", tx);
-      await tx.wait();
-
-      // Ambil data onchain terbaru
-      const totalSupplyRaw = await tokenContract.totalSupply();
-      const newTotalSupply = parseFloat(
-        ethers.formatUnits(totalSupplyRaw, tokenInfo?.decimals || 18)
-      );
-      const reserveBalanceRaw = await reserveContract.getReserveBalance(
-        token.address
-      );
-      const newReserveBalance = parseFloat(
-        ethers.formatUnits(reserveBalanceRaw, tokenInfo?.decimals || 18)
-      );
-      const totalStaked = await avs.totalTokenStakes(token.address);
-      const newRestake = parseFloat(ethers.formatUnits(totalStaked, 18));
-
-      // Simpan ke Supabase dengan data onchain
-      await saveToSupabase(newTotalSupply, newReserveBalance, newRestake);
-
-      alert("Rewards successfully claimed!");
-      // Refresh token info
-      await fetchTokenInfo();
-    } catch (err: any) {
-      console.error("Error claiming rewards:", err);
-      setErrorMessage(
-        `Failed to claim rewards: ${err.reason || err.message || "Unknown error"}`
-      );
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const distributeTokenRewards = async () => {
-    if (
-      !walletClient ||
-      !account ||
-      !depositRewardAmount ||
-      parseFloat(depositRewardAmount) <= 0
-    ) {
-      setErrorMessage("Please enter a valid reward amount");
-      return;
-    }
-
-    try {
-      setIsLoading(true);
-      setErrorMessage(null);
-      console.log("Distributing rewards:", {
-        token: token.address,
-        amount: depositRewardAmount,
-      });
-      const provider = new ethers.BrowserProvider(walletClient);
-      const signer = await provider.getSigner();
-      const avs = new ethers.Contract(
-        veristableAVSAddress,
-        VeristableAVSABI,
-        signer
-      );
-      const tokenContract = new ethers.Contract(
-        token.address,
-        TokenABI,
-        provider
-      );
-      const reserveContract = new ethers.Contract(
-        reserveAddress,
-        ReserveABI,
-        provider
-      );
-
-      // Check if contract is paused
-      const isPaused = await avs.paused();
-      if (isPaused) {
-        setErrorMessage("Cannot distribute rewards: Contract is paused");
-        return;
-      }
-
-      // Parse amount in wei
-      const amount = ethers.parseEther(depositRewardAmount);
-      console.log("Distribute amount (wei):", amount.toString());
-      const tx = await avs.distributeTokenRewards(token.address, {
-        value: amount,
-        gasLimit: 500000,
-      });
-      console.log("Distribute TX:", tx);
-      await tx.wait();
-
-      // Ambil data onchain terbaru
-      const totalSupplyRaw = await tokenContract.totalSupply();
-      const newTotalSupply = parseFloat(
-        ethers.formatUnits(totalSupplyRaw, tokenInfo?.decimals || 18)
-      );
-      const reserveBalanceRaw = await reserveContract.getReserveBalance(
-        token.address
-      );
-      const newReserveBalance = parseFloat(
-        ethers.formatUnits(reserveBalanceRaw, tokenInfo?.decimals || 18)
-      );
-      const totalStaked = await avs.totalTokenStakes(token.address);
-      const newRestake = parseFloat(ethers.formatUnits(totalStaked, 18));
-
-      // Simpan ke Supabase dengan data onchain
-      await saveToSupabase(newTotalSupply, newReserveBalance, newRestake);
-
-      setDepositRewardAmount("");
-      alert("Rewards successfully distributed!");
-      // Refresh token info
-      await fetchTokenInfo();
-    } catch (err: any) {
-      console.error("Error distributing rewards:", err);
-      setErrorMessage(
-        `Failed to distribute rewards: ${err.reason || err.message || "Unknown error"}`
-      );
-    } finally {
-      setIsLoading(false);
+      setErrorMessage(`Failed to save to database: ${err.message}`);
     }
   };
 
   const fetchTokenInfo = async () => {
     if (!walletClient || !account || !ethers.isAddress(token.address)) return;
-
     try {
       setIsLoading(true);
       setErrorMessage(null);
+
       const provider = new ethers.BrowserProvider(walletClient);
+      const signer = await provider.getSigner();
+
       const tokenContract = new ethers.Contract(
         token.address,
         TokenABI,
@@ -628,7 +139,7 @@ const TokenActionPopup = ({
       const avsContract = new ethers.Contract(
         veristableAVSAddress,
         VeristableAVSABI,
-        provider
+        signer
       );
 
       const [
@@ -682,43 +193,355 @@ const TokenActionPopup = ({
       });
     } catch (err: any) {
       console.error("Error fetching token info:", err);
+      setErrorMessage(`Failed to load token information: ${err.message}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const stakeForToken = async () => {
+    if (
+      !walletClient ||
+      !account ||
+      !stakeAmount ||
+      parseFloat(stakeAmount) <= 0
+    ) {
+      setErrorMessage("Please enter a valid stake amount");
+      return;
+    }
+    if (tokenInfo && parseFloat(stakeAmount) < parseFloat(tokenInfo.minStake)) {
+      setErrorMessage(`Stake amount must be at least ${tokenInfo.minStake}`);
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      setErrorMessage(null);
+
+      const provider = new ethers.BrowserProvider(walletClient);
+      const signer = await provider.getSigner();
+      const avs = new ethers.Contract(
+        veristableAVSAddress,
+        VeristableAVSABI,
+        signer
+      );
+      const tokenContract = new ethers.Contract(
+        token.address,
+        TokenABI,
+        provider
+      );
+      const reserveContract = new ethers.Contract(
+        reserveAddress,
+        ReserveABI,
+        provider
+      );
+
+      const tx = await avs.stakeForToken(token.address, {
+        value: ethers.parseEther(stakeAmount),
+        gasLimit: 500000,
+      });
+
+      await tx.wait();
+
+      const [totalSupplyRaw, reserveBalanceRaw, totalStakedRaw] =
+        await Promise.all([
+          tokenContract.totalSupply(),
+          reserveContract.getReserveBalance(token.address),
+          avs.totalTokenStakes(token.address),
+        ]);
+
+      const totalSupply = parseFloat(
+        ethers.formatUnits(totalSupplyRaw, tokenInfo?.decimals || 18)
+      );
+      const reserveBalance = parseFloat(
+        ethers.formatUnits(reserveBalanceRaw, tokenInfo?.decimals || 18)
+      );
+      const restake = parseFloat(ethers.formatUnits(totalStakedRaw, 18));
+
+      await saveToSupabase(totalSupply, reserveBalance, restake);
+
+      setStakeAmount("");
+      alert("ETH successfully staked!");
+      await fetchTokenInfo();
+    } catch (err: any) {
+      console.error("Error staking ETH:", err);
+      setErrorMessage(`Failed to stake: ${err.reason || err.message}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const unstakeFromToken = async () => {
+    if (
+      !walletClient ||
+      !account ||
+      !unstakeAmount ||
+      parseFloat(unstakeAmount) <= 0
+    ) {
+      setErrorMessage("Please enter a valid unstake amount");
+      return;
+    }
+    if (
+      tokenInfo &&
+      parseFloat(unstakeAmount) > parseFloat(tokenInfo.userStake)
+    ) {
       setErrorMessage(
-        `Failed to load token information: ${err.message || "Unknown error"}`
+        `Unstake amount cannot exceed your stake (${tokenInfo.userStake})`
+      );
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      setErrorMessage(null);
+
+      const provider = new ethers.BrowserProvider(walletClient);
+      const signer = await provider.getSigner();
+      const avs = new ethers.Contract(
+        veristableAVSAddress,
+        VeristableAVSABI,
+        signer
+      );
+      const tokenContract = new ethers.Contract(
+        token.address,
+        TokenABI,
+        provider
+      );
+      const reserveContract = new ethers.Contract(
+        reserveAddress,
+        ReserveABI,
+        provider
+      );
+
+      const isPaused = await avs.paused();
+      if (isPaused) {
+        setErrorMessage("Cannot unstake: Contract is paused");
+        return;
+      }
+
+      const amount = ethers.parseEther(unstakeAmount);
+      const tx = await avs.unstakeFromToken(token.address, amount, {
+        gasLimit: 500000,
+      });
+
+      await tx.wait();
+
+      const [totalSupplyRaw, reserveBalanceRaw, totalStakedRaw] =
+        await Promise.all([
+          tokenContract.totalSupply(),
+          reserveContract.getReserveBalance(token.address),
+          avs.totalTokenStakes(token.address),
+        ]);
+
+      const totalSupply = parseFloat(
+        ethers.formatUnits(totalSupplyRaw, tokenInfo?.decimals || 18)
+      );
+      const reserveBalance = parseFloat(
+        ethers.formatUnits(reserveBalanceRaw, tokenInfo?.decimals || 18)
+      );
+      const restake = parseFloat(ethers.formatUnits(totalStakedRaw, 18));
+
+      await saveToSupabase(totalSupply, reserveBalance, restake);
+
+      setUnstakeAmount("");
+      alert("ETH successfully unstaked!");
+      await fetchTokenInfo();
+    } catch (err: any) {
+      console.error("Error unstaking ETH:", err);
+      setErrorMessage(`Failed to unstake: ${err.reason || err.message}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const claimTokenRewards = async () => {
+    if (!walletClient || !account) {
+      setErrorMessage("Please connect your wallet");
+      return;
+    }
+    if (!tokenInfo) {
+      setErrorMessage("Token information not loaded");
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      setErrorMessage(null);
+
+      const provider = new ethers.BrowserProvider(walletClient);
+      const signer = await provider.getSigner();
+      const avs = new ethers.Contract(
+        veristableAVSAddress,
+        VeristableAVSABI,
+        signer
+      );
+      const tokenContract = new ethers.Contract(
+        token.address,
+        TokenABI,
+        provider
+      );
+      const reserveContract = new ethers.Contract(
+        reserveAddress,
+        ReserveABI,
+        provider
+      );
+
+      const isPaused = await avs.paused();
+      if (isPaused) {
+        setErrorMessage("Cannot claim rewards: Contract is paused");
+        return;
+      }
+
+      const userStake = await avs.tokenStakes(token.address, account);
+      if (userStake === 0n) {
+        setErrorMessage("No active stake found. Cannot claim rewards.");
+        return;
+      }
+
+      const tx = await avs.claimTokenRewards(token.address, {
+        gasLimit: 600000,
+      });
+
+      await tx.wait();
+
+      const [totalSupplyRaw, reserveBalanceRaw, totalStakedRaw] =
+        await Promise.all([
+          tokenContract.totalSupply(),
+          reserveContract.getReserveBalance(token.address),
+          avs.totalTokenStakes(token.address),
+        ]);
+
+      const totalSupply = parseFloat(
+        ethers.formatUnits(totalSupplyRaw, tokenInfo?.decimals || 18)
+      );
+      const reserveBalance = parseFloat(
+        ethers.formatUnits(reserveBalanceRaw, tokenInfo?.decimals || 18)
+      );
+      const restake = parseFloat(ethers.formatUnits(totalStakedRaw, 18));
+
+      await saveToSupabase(totalSupply, reserveBalance, restake);
+
+      alert("Rewards successfully claimed!");
+      await fetchTokenInfo();
+    } catch (err: any) {
+      console.error("Error claiming rewards:", err);
+      setErrorMessage(`Failed to claim rewards: ${err.reason || err.message}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const distributeTokenRewards = async () => {
+    if (
+      !walletClient ||
+      !account ||
+      !depositRewardAmount ||
+      parseFloat(depositRewardAmount) <= 0
+    ) {
+      setErrorMessage("Please enter a valid reward amount");
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      setErrorMessage(null);
+
+      const provider = new ethers.BrowserProvider(walletClient);
+      const signer = await provider.getSigner();
+      const avs = new ethers.Contract(
+        veristableAVSAddress,
+        VeristableAVSABI,
+        signer
+      );
+      const tokenContract = new ethers.Contract(
+        token.address,
+        TokenABI,
+        provider
+      );
+      const reserveContract = new ethers.Contract(
+        reserveAddress,
+        ReserveABI,
+        provider
+      );
+
+      const isPaused = await avs.paused();
+      if (isPaused) {
+        setErrorMessage("Cannot distribute rewards: Contract is paused");
+        return;
+      }
+
+      const amount = ethers.parseEther(depositRewardAmount);
+      const tx = await avs.distributeTokenRewards(token.address, {
+        value: amount,
+        gasLimit: 500000,
+      });
+
+      await tx.wait();
+
+      const [totalSupplyRaw, reserveBalanceRaw, totalStakedRaw] =
+        await Promise.all([
+          tokenContract.totalSupply(),
+          reserveContract.getReserveBalance(token.address),
+          avs.totalTokenStakes(token.address),
+        ]);
+
+      const totalSupply = parseFloat(
+        ethers.formatUnits(totalSupplyRaw, tokenInfo?.decimals || 18)
+      );
+      const reserveBalance = parseFloat(
+        ethers.formatUnits(reserveBalanceRaw, tokenInfo?.decimals || 18)
+      );
+      const restake = parseFloat(ethers.formatUnits(totalStakedRaw, 18));
+
+      await saveToSupabase(totalSupply, reserveBalance, restake);
+
+      setDepositRewardAmount("");
+      alert("Rewards successfully distributed!");
+      await fetchTokenInfo();
+    } catch (err: any) {
+      console.error("Error distributing rewards:", err);
+      setErrorMessage(
+        `Failed to distribute rewards: ${err.reason || err.message}`
       );
     } finally {
       setIsLoading(false);
     }
   };
 
+  useEffect(() => {
+    if (isOpen) fetchTokenInfo();
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50">
-      <div className="absolute bg-white rounded-lg w-[32vw] max-h-[80vh] overflow-y-auto p-6 relative shadow-md">
-        <button onClick={onClose} className="absolute right-4 top-4 text-xl">
-          <IoClose className="text-black" />
+      <div className="bg-white rounded-lg w-full max-w-xl max-h-[90vh] overflow-y-auto p-6 shadow-xl relative border border-gray-200">
+        <button
+          onClick={onClose}
+          className="absolute right-4 top-4 text-2xl text-gray-500 hover:text-gray-700"
+        >
+          <IoClose />
         </button>
-        <h2 className="font-jakarta text-[1.2vw] font-bold mb-4 text-black">
-          Token Actions
-        </h2>
+
+        <h2 className="text-xl font-bold mb-6 text-gray-800">Token Actions</h2>
+
         {isLoading ? (
-          <div className="flex justify-center items-center h-[20vh]">
-            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-purple-700"></div>
+          <div className="flex justify-center py-10">
+            <div className="w-10 h-10 border-4 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
           </div>
         ) : tokenInfo ? (
           <>
-            {/* Informasi Token */}
+            {/* Token Info */}
             <div className="mb-6">
-              <h3 className="font-jakarta text-[1vw] font-semibold text-gray-800 mb-3">
+              <h3 className="font-semibold text-gray-700 mb-3">
                 Token Information
               </h3>
               <div className="grid grid-cols-2 gap-4 bg-gray-50 p-4 rounded-lg border border-gray-200">
                 <div className="col-span-2">
-                  <label className="block text-[0.833vw] text-gray-600 mb-1">
-                    Status
-                  </label>
+                  <label className="block text-sm text-gray-500">Status</label>
                   <p
-                    className={`font-jakarta text-[0.972vw] ${parseFloat(tokenInfo.reserve) >= parseFloat(tokenInfo.totalSupply) ? "text-green-500" : "text-red-500"}`}
+                    className={`font-medium ${parseFloat(tokenInfo.reserve) >= parseFloat(tokenInfo.totalSupply) ? "text-green-500" : "text-red-500"}`}
                   >
                     {parseFloat(tokenInfo.reserve) >=
                     parseFloat(tokenInfo.totalSupply)
@@ -727,136 +550,121 @@ const TokenActionPopup = ({
                   </p>
                 </div>
                 <div>
-                  <label className="block text-[0.833vw] text-gray-600 mb-1">
+                  <label className="block text-sm text-gray-500">
                     Token Name
                   </label>
-                  <p className="font-jakarta text-[0.972vw] text-[#717680]">
-                    {tokenInfo.name}
+                  <p className="font-medium">{tokenInfo.name}</p>
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-500">Address</label>
+                  <p className="font-mono text-xs truncate">
+                    {tokenInfo.address}
                   </p>
                 </div>
                 <div>
-                  <label className="block text-[0.833vw] text-gray-600 mb-1">
-                    Address
-                  </label>
-                  <p className="font-jakarta text-[0.972vw] text-[#717680]">
-                    {tokenInfo.address.slice(0, 6)}...
-                    {tokenInfo.address.slice(-4)}
-                  </p>
-                </div>
-                <div>
-                  <label className="block text-[0.833vw] text-gray-600 mb-1">
+                  <label className="block text-sm text-gray-500">
                     Total Supply
                   </label>
-                  <p className="font-jakarta text-[0.972vw] text-[#717680]">
-                    {tokenInfo.totalSupply}
-                  </p>
+                  <p className="font-medium">{tokenInfo.totalSupply}</p>
                 </div>
                 <div>
-                  <label className="block text-[0.833vw] text-gray-600 mb-1">
+                  <label className="block text-sm text-gray-500">
                     Reserve Balance
                   </label>
-                  <p className="font-jakarta text-[0.972vw] text-[#717680]">
-                    {tokenInfo.reserve}
-                  </p>
+                  <p className="font-medium">{tokenInfo.reserve}</p>
                 </div>
                 <div>
-                  <label className="block text-[0.833vw] text-gray-600 mb-1">
+                  <label className="block text-sm text-gray-500">
                     Your Balance
                   </label>
-                  <p className="font-jakarta text-[0.972vw] text-[#717680]">
-                    {tokenInfo.userBalance}
-                  </p>
+                  <p className="font-medium">{tokenInfo.userBalance}</p>
                 </div>
                 <div>
-                  <label className="block text-[0.833vw] text-gray-600 mb-1">
+                  <label className="block text-sm text-gray-500">
                     Last Update
                   </label>
-                  <p className="font-jakarta text-[0.972vw] text-[#717680]">
-                    {tokenInfo.lastUpdate}
-                  </p>
+                  <p className="font-medium">{tokenInfo.lastUpdate}</p>
                 </div>
               </div>
             </div>
 
-            {/* Informasi Staking */}
+            {/* Staking Info */}
             <div className="mb-6">
-              <h3 className="font-jakarta text-[1vw] font-semibold text-gray-800 mb-3">
+              <h3 className="font-semibold text-gray-700 mb-3">
                 Staking Information
               </h3>
               <div className="grid grid-cols-2 gap-4 bg-gray-50 p-4 rounded-lg border border-gray-200">
                 <div>
-                  <label className="block text-[0.833vw] text-gray-600 mb-1">
+                  <label className="block text-sm text-gray-500">
                     Your Stake
                   </label>
-                  <p className="font-jakarta text-[0.972vw] text-[#717680]">
-                    {tokenInfo.userStake}
-                  </p>
+                  <p className="font-medium">{tokenInfo.userStake}</p>
                 </div>
                 <div>
-                  <label className="block text-[0.833vw] text-gray-600 mb-1">
+                  <label className="block text-sm text-gray-500">
                     Total Staked
                   </label>
-                  <p className="font-jakarta text-[0.972vw] text-[#717680]">
-                    {tokenInfo.totalStaked}
-                  </p>
+                  <p className="font-medium">{tokenInfo.totalStaked}</p>
                 </div>
                 <div>
-                  <label className="block text-[0.833vw] text-gray-600 mb-1">
+                  <label className="block text-sm text-gray-500">
                     Rewards Pool
                   </label>
-                  <p className="font-jakarta text-[0.972vw] text-[#717680]">
-                    {tokenInfo.rewardsPool}
-                  </p>
+                  <p className="font-medium">{tokenInfo.rewardsPool}</p>
                 </div>
                 <div>
-                  <label className="block text-[0.833vw] text-gray-600 mb-1">
+                  <label className="block text-sm text-gray-500">
                     Pending Rewards
                   </label>
-                  <p className="font-jakarta text-[0.972vw] text-[#717680]">
-                    {tokenInfo.pendingRewards}
-                  </p>
+                  <p className="font-medium">{tokenInfo.pendingRewards}</p>
                 </div>
                 <div>
-                  <label className="block text-[0.833vw] text-gray-600 mb-1">
+                  <label className="block text-sm text-gray-500">
                     Minimum Stake
                   </label>
-                  <p className="font-jakarta text-[0.972vw] text-[#717680]">
-                    {tokenInfo.minStake}
-                  </p>
+                  <p className="font-medium">{tokenInfo.minStake}</p>
                 </div>
               </div>
             </div>
 
-            {/* Tab Tindakan */}
+            {/* Tabs */}
             <div className="mb-6">
-              <h3 className="font-jakarta text-[1vw] font-semibold text-gray-800 mb-3">
-                Actions
-              </h3>
               <div className="flex border-b border-gray-200 mb-4">
                 <button
-                  className={`px-4 py-2 text-[0.833vw] font-jakarta font-medium ${activeTab === "stake" ? "border-b-2 border-purple-700 text-purple-700" : "text-gray-600"}`}
+                  className={`px-4 py-2 font-medium ${
+                    activeTab === "stake"
+                      ? "border-b-2 border-purple-600 text-purple-600"
+                      : "text-gray-500"
+                  }`}
                   onClick={() => setActiveTab("stake")}
                 >
                   Stake
                 </button>
                 <button
-                  className={`px-4 py-2 text-[0.833vw] font-jakarta font-medium ${activeTab === "unstake" ? "border-b-2 border-purple-700 text-purple-700" : "text-gray-600"}`}
+                  className={`px-4 py-2 font-medium ${
+                    activeTab === "unstake"
+                      ? "border-b-2 border-purple-600 text-purple-600"
+                      : "text-gray-500"
+                  }`}
                   onClick={() => setActiveTab("unstake")}
                 >
                   Unstake
                 </button>
                 <button
-                  className={`px-4 py-2 text-[0.833vw] font-jakarta font-medium ${activeTab === "rewards" ? "border-b-2 border-purple-700 text-purple-700" : "text-gray-600"}`}
+                  className={`px-4 py-2 font-medium ${
+                    activeTab === "rewards"
+                      ? "border-b-2 border-purple-600 text-purple-600"
+                      : "text-gray-500"
+                  }`}
                   onClick={() => setActiveTab("rewards")}
                 >
                   Rewards
                 </button>
               </div>
 
-              {/* Konten Tab */}
               {activeTab === "stake" && (
-                <div className="p-4 bg-white rounded-lg border border-gray-200">
-                  <label className="block text-[0.833vw] text-gray-600 mb-1">
+                <div className="space-y-4">
+                  <label className="block text-sm font-medium text-gray-700">
                     Amount to Stake (ETH){" "}
                     <span className="text-red-500">*</span>
                   </label>
@@ -867,18 +675,18 @@ const TokenActionPopup = ({
                     placeholder="Enter amount to stake"
                     value={stakeAmount}
                     onChange={(e) => setStakeAmount(e.target.value)}
-                    className="w-full font-jakarta text-[0.972vw] text-[#717680] border px-3 py-2 rounded bg-white mb-3"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
                     disabled={isLoading}
                   />
                   <div className="flex justify-end">
                     <button
                       onClick={stakeForToken}
-                      className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 text-[0.833vw] font-jakarta disabled:bg-green-300"
                       disabled={
                         isLoading ||
                         !stakeAmount ||
                         parseFloat(stakeAmount) <= 0
                       }
+                      className="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors disabled:bg-green-300"
                     >
                       {isLoading ? "Processing..." : "Stake ETH"}
                     </button>
@@ -887,8 +695,8 @@ const TokenActionPopup = ({
               )}
 
               {activeTab === "unstake" && (
-                <div className="p-4 bg-white rounded-lg border border-gray-200">
-                  <label className="block text-[0.833vw] text-gray-600 mb-1">
+                <div className="space-y-4">
+                  <label className="block text-sm font-medium text-gray-700">
                     Amount to Unstake (ETH){" "}
                     <span className="text-red-500">*</span>
                   </label>
@@ -899,13 +707,12 @@ const TokenActionPopup = ({
                     placeholder="Enter amount to unstake"
                     value={unstakeAmount}
                     onChange={(e) => setUnstakeAmount(e.target.value)}
-                    className="w-full font-jakarta text-[0.972vw] text-[#717680] border px-3 py-2 rounded bg-white mb-3"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
                     disabled={isLoading}
                   />
                   <div className="flex justify-end">
                     <button
                       onClick={unstakeFromToken}
-                      className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 text-[0.833vw] font-jakarta disabled:bg-red-300"
                       disabled={
                         isLoading ||
                         !unstakeAmount ||
@@ -913,6 +720,7 @@ const TokenActionPopup = ({
                         !tokenInfo ||
                         parseFloat(tokenInfo.userStake) <= 0
                       }
+                      className="px-6 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors disabled:bg-red-300"
                     >
                       {isLoading ? "Processing..." : "Unstake ETH"}
                     </button>
@@ -921,17 +729,16 @@ const TokenActionPopup = ({
               )}
 
               {activeTab === "rewards" && (
-                <div className="p-4 bg-white rounded-lg border border-gray-200">
-                  <div className="mb-4">
-                    <button
-                      onClick={claimTokenRewards}
-                      className="w-full bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-700 text-[0.833vw] font-jakarta disabled:bg-blue-300"
-                      disabled={isLoading || !tokenInfo}
-                    >
-                      {isLoading ? "Processing..." : "Claim Rewards"}
-                    </button>
-                  </div>
-                  <label className="block text-[0.833vw] text-gray-600 mb-1">
+                <div className="space-y-4">
+                  <button
+                    onClick={claimTokenRewards}
+                    disabled={isLoading}
+                    className="w-full px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:bg-blue-300"
+                  >
+                    {isLoading ? "Processing..." : "Claim Rewards"}
+                  </button>
+
+                  <label className="block text-sm font-medium text-gray-700">
                     Amount to Distribute (ETH){" "}
                     <span className="text-red-500">*</span>
                   </label>
@@ -942,18 +749,18 @@ const TokenActionPopup = ({
                     placeholder="Enter amount to distribute"
                     value={depositRewardAmount}
                     onChange={(e) => setDepositRewardAmount(e.target.value)}
-                    className="w-full font-jakarta text-[0.972vw] text-[#717680] border px-3 py-2 rounded bg-white mb-3"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
                     disabled={isLoading}
                   />
                   <div className="flex justify-end">
                     <button
                       onClick={distributeTokenRewards}
-                      className="w-full bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-700 text-[0.833vw] font-jakarta disabled:bg-blue-300"
                       disabled={
                         isLoading ||
                         !depositRewardAmount ||
                         parseFloat(depositRewardAmount) <= 0
                       }
+                      className="w-full px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:bg-blue-300"
                     >
                       {isLoading ? "Processing..." : "Distribute Rewards"}
                     </button>
@@ -962,21 +769,17 @@ const TokenActionPopup = ({
               )}
             </div>
 
-            {/* Pesan Kesalahan */}
+            {/* Error Message */}
             {errorMessage && (
-              <p className="text-red-500 font-jakarta text-[0.833vw] mb-4">
+              <div className="p-3 mt-4 bg-red-100 text-red-700 rounded-md text-sm">
                 {errorMessage}
-              </p>
+              </div>
             )}
           </>
         ) : (
-          <p className="text-center text-[0.972vw] text-gray-500">
-            Failed to load token data
-          </p>
+          <p className="text-center text-gray-500">Failed to load token data</p>
         )}
       </div>
     </div>
   );
-};
-
-export default TokenActionPopup;
+}
