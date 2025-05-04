@@ -220,22 +220,16 @@ const RWADetailPage = () => {
     <div className="min-h-screen w-full bg-white pt-[6vw] px-4 lg:px-0 font-jakarta">
       <section className="w-[90%] mx-auto py-12 flex flex-col justify-center items-center gap-[1vw]">
         <RWAInformation data={rwaData} />
-        <div className="w-full flex flex-row gap-[0.833vw]">
-          <ContractChecklist steps={steps} />
-          <div className="w-[18.75vw] aspect-[360/171]">
-            <TeamCard
-              team="Real Estate"
-              description={
-                rwaData.description ||
-                "Long-term value from physical properties."
-              }
-              createdAt={`by ${rwaData.owner.slice(0, 6)}...${rwaData.owner.slice(-4)}`}
-              customClass="w-[18.75vw] aspect-[360/171]"
-            />
-          </div>
-        </div>
+        <ContractChecklist steps={steps} />
+        <TeamCard
+          team="Real Estate"
+          description={
+            rwaData.description || "Long-term value from physical properties."
+          }
+          createdAt={`by ${rwaData.owner.slice(0, 6)}...${rwaData.owner.slice(-4)}`}
+          customClass="w-[18.75vw] aspect-[360/171]"
+        />
         <AnalyticsCard />
-        <RegisteredOperators />
         <TokenCard
           contractAddress={contractAddress as string}
           owner={rwaData.owner}

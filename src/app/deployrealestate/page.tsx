@@ -1,32 +1,56 @@
 "use client";
-
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Dropdown from "@/components/Dropdown";
+import { useAccount, useWalletClient } from "wagmi";
 import { ethers } from "ethers";
+import { createClient } from "@supabase/supabase-js";
 
-const teams = [
-  { label: "Your Team", icon: "/icons/team.png" },
-  { label: "Team Alpha", icon: "/icons/team-alpha.png" },
-  { label: "Team Beta", icon: "/icons/team-beta.png" },
+// Supabase Client Setup
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
+const supabase = createClient(supabaseUrl, supabaseKey);
+
+// ABI dan Alamat Kontrak
+const TokenFactoryABI = [
+  "function createToken(string name, string symbol, address tokenOwner) public returns (address)",
+  "function getTokensByUser(address user) public view returns (address[])",
+  "function addToAVSTokens(address token) public",
+  "function removeFromAVSTokens(address token) public",
+  "function getUserTokenCount(address user) public view returns (uint256)",
+  "event TokenCreated(address indexed tokenAddress, string name, string symbol, address indexed owner)",
 ];
 
-const projects = [{ label: "Project X" }, { label: "Project Y" }];
+// Alamat Kontrak di Pharos Network
+const factoryAddress = "0x9C34c7d588C2db8f5f4626C5e8C6E51cffFDF9e1";
 
+const teams = [
+  { label: "Veri Team", icon: "/icons/team.png" },
+  { label: "Stable Team", icon: "/icons/team-alpha.png" },
+];
+const projects = [{ label: "Project Real Estate" }, { label: "Stablecoin" }];
 const chains = [
-  { label: "Ethereum Mainnet", icon: "/icons/ethereum.png" },
-  { label: "Polygon Mumbai", icon: "/icons/polygon.png" },
-  { label: "Binance Smart Chain", icon: "/icons/binance.png" },
+  { label: "Pharos Mainnet", icon: "/icons/ethereum.png" },
+  { label: "Pharos Testnet", icon: "/icons/binance.png" },
+  { label: "Pharos Devnet", icon: "/icons/polygon.png" },
 ];
 
 export default function DeployPage() {
+  const [tokenName, setTokenName] = useState("");
+  const [tokenSymbol, setTokenSymbol] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [userTokens, setUserTokens] = useState<string[]>([]);
+  const [selectedImages, setSelectedImages] = useState<File[]>([]);
+  const [description, setDescription] = useState("");
+  const [location, setLocation] = useState("");
   const router = useRouter();
-  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const { address: account } = useAccount();
+  const { data: walletClient } = useWalletClient();
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setSelectedImage(e.target.files[0]);
+    if (e.target.files) {
+      setSelectedImages(Array.from(e.target.files));
     }
   };
 
@@ -47,178 +71,116 @@ export default function DeployPage() {
     }
   };
 
-  // const uploadImages = async (files: File[]): Promise<string[]> => {
-  //   const imageUrls: string[] = [];
-  //   for (const file of files) {
-  //     const fileName = `${Date.now()}-${file.name.replace(/\s/g, "_")}`;
-  //     try {
-  //       console.log(`Uploading image: ${fileName} to bucket 'images'`);
-  //       const { error } = await supabase.storage
-  //         .from("images")
-  //         .upload(fileName, file, {
-  //           cacheControl: "3600",
-  //           upsert: false,
-  //         });
-  //       if (error) {
-  //         console.error(`Failed to upload ${fileName}:`, error);
-  //         throw new Error(
-  //           `Failed to upload image ${fileName}: ${error.message}`
-  //         );
-  //       }
-  //       const { data: urlData } = supabase.storage
-  //         .from("images")
-  //         .getPublicUrl(fileName);
-  //       if (!urlData.publicUrl) {
-  //         throw new Error(`Failed to retrieve public URL for ${fileName}`);
-  //       }
-  //       console.log(`Public URL for ${fileName}:`, urlData.publicUrl);
-  //       imageUrls.push(urlData.publicUrl);
-  //     } catch (error: string) {
-  //       console.error(`Error processing ${fileName}:`, error);
-  //       throw error;
-  //     }
-  //   }
-  //   return imageUrls;
-  // };
+  const uploadImages = async (files: File[]): Promise<string[]> => {
+    const imageUrls: string[] = [];
+    for (const file of files) {
+      const fileName = `${Date.now()}-${file.name.replace(/\s/g, "_")}`;
+      try {
+        const { error } = await supabase.storage
+          .from("images")
+          .upload(fileName, file, { cacheControl: "3600", upsert: false });
+        if (error) throw new Error(`Upload failed: ${error.message}`);
 
-  // const createTokenAndInsert = async () => {
-  //   try {
-  //     if (!walletClient || !account || !tokenName || !tokenSymbol) {
-  //       alert("Please connect your wallet and fill in all required fields!");
-  //       return;
-  //     }
+        const { data: urlData } = supabase.storage
+          .from("images")
+          .getPublicUrl(fileName);
+        if (!urlData?.publicUrl) throw new Error("No public URL");
 
-  //     setIsLoading(true);
+        imageUrls.push(urlData.publicUrl);
+      } catch (error: any) {
+        console.error(`Image processing error:`, error);
+        throw error;
+      }
+    }
+    return imageUrls;
+  };
 
-  //     // Upload images to Supabase Storage
-  //     let imageUrls: string[] = [];
-  //     if (selectedImages.length > 0) {
-  //       console.log(
-  //         "Selected images:",
-  //         selectedImages.map((f) => f.name)
-  //       );
-  //       imageUrls = await uploadImages(selectedImages);
-  //       console.log("Uploaded image URLs:", imageUrls);
-  //     }
+  const createTokenAndInsert = async () => {
+    try {
+      if (!walletClient || !account || !tokenName || !tokenSymbol) {
+        alert("Please connect your wallet and fill in all required fields!");
+        return;
+      }
 
-  //     // Inisiasi provider dan kontrak
-  //     const provider = new ethers.BrowserProvider(walletClient);
-  //     const signer = await provider.getSigner();
-  //     const factory = new ethers.Contract(
-  //       factoryAddress,
-  //       TokenFactoryABI,
-  //       signer
-  //     );
+      setIsLoading(true);
 
-  //     // Cek token sebelum pembuatan
-  //     console.log("Checking tokens before creation...");
-  //     const tokensBefore = await factory.getTokensByUser(account);
-  //     console.log("Tokens before:", tokensBefore);
+      // Upload images
+      let imageUrls: string[] = [];
+      if (selectedImages.length > 0) {
+        imageUrls = await uploadImages(selectedImages);
+      }
 
-  //     // Create token on blockchain
-  //     console.log("Creating token with:", {
-  //       tokenName,
-  //       tokenSymbol,
-  //       owner: account,
-  //     });
-  //     const tx = await factory.createToken(tokenName, tokenSymbol, account, {
-  //       gasLimit: 5000000,
-  //     });
-  //     console.log("Transaction hash:", tx.hash);
-  //     const receipt = await tx.wait();
-  //     console.log("Transaction receipt:", receipt);
+      // Init provider & contract
+      const provider = new ethers.BrowserProvider(walletClient);
+      const signer = await provider.getSigner();
+      const factory = new ethers.Contract(
+        factoryAddress,
+        TokenFactoryABI,
+        signer
+      );
 
-  //     // Coba ambil tokenAddress dari event
-  //     let tokenAddress: string | undefined;
-  //     const parsedLogs = receipt.logs
-  //       .map((log: ethers.Log, index: number) => {
-  //         try {
-  //           const parsed = factory.interface.parseLog(
-  //             log
-  //           ) as ethers.LogDescription | null;
-  //           console.log(`Parsed log ${index}:`, parsed);
-  //           return parsed;
-  //         } catch (error) {
-  //           console.error(`Failed to parse log ${index}:`, error);
-  //           return null;
-  //         }
-  //       })
-  //       .filter(
-  //         (parsed: ethers.LogDescription | null) =>
-  //           parsed && parsed.name === "TokenCreated"
-  //       );
+      const tokensBefore = await factory.getTokensByUser(account);
 
-  //     if (parsedLogs.length > 0) {
-  //       tokenAddress = parsedLogs[0]?.args.tokenAddress;
-  //       console.log("Token address from event:", tokenAddress);
-  //     }
+      // Create token
+      const tx = await factory.createToken(tokenName, tokenSymbol, account, {
+        gasLimit: 5000000,
+      });
+      const receipt = await tx.wait();
 
-  //     // Jika event tidak ditemukan, coba fallback ke getTokensByUser
-  //     if (!tokenAddress) {
-  //       console.log("No TokenCreated event found, trying getTokensByUser...");
-  //       const tokensAfter = await factory.getTokensByUser(account);
-  //       console.log("Tokens after:", tokensAfter);
+      // Get token address from event or fallback
+      let tokenAddress: string | undefined;
 
-  //       // Cari token baru yang tidak ada di tokensBefore
-  //       const newToken = tokensAfter.find(
-  //         (token: string) => !tokensBefore.includes(token)
-  //       );
-  //       if (newToken) {
-  //         tokenAddress = newToken;
-  //         console.log("Token address from getTokensByUser:", tokenAddress);
-  //       }
-  //     }
+      const parsedLogs = receipt.logs
+        .map((log) => {
+          try {
+            return factory.interface.parseLog(log);
+          } catch {
+            return null;
+          }
+        })
+        .filter((log) => log && log.name === "TokenCreated");
 
-  //     // Validasi tokenAddress
-  //     if (!tokenAddress || !ethers.isAddress(tokenAddress)) {
-  //       throw new Error("Failed to retrieve valid token address");
-  //     }
+      if (parsedLogs.length > 0) {
+        tokenAddress = parsedLogs[0]?.args.tokenAddress;
+      }
 
-  //     // Prepare data for Supabase
-  //     const realEstateData = {
-  //       address: tokenAddress,
-  //       owner: account,
-  //       name: tokenName,
-  //       description,
-  //       location,
-  //       image: imageUrls,
-  //     };
-  //     console.log(
-  //       "Data to be sent to Supabase real_estate table:",
-  //       realEstateData
-  //     );
+      if (!tokenAddress) {
+        const tokensAfter = await factory.getTokensByUser(account);
+        tokenAddress = tokensAfter.find((t) => !tokensBefore.includes(t));
+      }
 
-  //     // Insert into Supabase real_estate table
-  //     const { error } = await supabase
-  //       .from("real_estate")
-  //       .insert([realEstateData]);
+      if (!tokenAddress || !ethers.isAddress(tokenAddress)) {
+        throw new Error("Failed to retrieve valid token address");
+      }
 
-  //     if (error) {
-  //       console.error("Error inserting into real_estate:", error);
-  //       throw new Error(`Failed to save real estate data: ${error.message}`);
-  //     }
+      // Insert into Supabase
+      const realEstateData = {
+        address: tokenAddress,
+        owner: account,
+        name: tokenName,
+        description,
+        location,
+        image: imageUrls,
+      };
 
-  //     // Reload user tokens
-  //     await loadUserTokens(account, provider);
+      const { error } = await supabase
+        .from("real_estate")
+        .insert([realEstateData]);
+      if (error) throw error;
 
-  //     // Reset form
-  //     setTokenName("");
-  //     setTokenSymbol("");
-  //     setDescription("");
-  //     setLocation("");
-  //     setSelectedImages([]);
-  //     alert("Token created and real estate data saved successfully!");
-  //   } catch (error: string) {
-  //     console.error("Error during createTokenAndInsert:", error);
-  //     alert(
-  //       `Failed to complete operation: ${
-  //         error.reason || error.message || "Unknown error"
-  //       }`
-  //     );
-  //   } finally {
-  //     setIsLoading(false);
-  //   }
-  // };
+      // Reset form
+      setTokenName("");
+      setTokenSymbol("");
+      setDescription("");
+      setLocation("");
+      setSelectedImages([]);
+      alert("Token created and saved successfully!");
+    } catch (error: any) {
+      alert(`Error: ${error.reason || error.message || "Unknown error"}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (account && walletClient) {
@@ -228,152 +190,153 @@ export default function DeployPage() {
   }, [account, walletClient]);
 
   return (
-    <div className="min-h-screen bg-white pt-[6vw] px-4 lg:px-0 font-jakarta ml-[1vw]">
-      <div className="w-[90%] mx-auto py-12">
+    <div className="min-h-screen bg-white pt-16 px-4 font-jakarta">
+      <div className="max-w-6xl mx-auto py-10">
         {/* Back Button */}
         <div
-          className="flex items-center gap-[0.83vw] mb-[4.5vw] cursor-pointer"
           onClick={() => router.back()}
+          className="flex items-center gap-2 mb-8 cursor-pointer"
         >
           <Image src="/icons/back.png" alt="Back" width={14} height={14} />
-          <p className="text-[1.11vw] text-[#000000]">Back</p>
+          <p className="text-gray-800">Back</p>
         </div>
 
         {/* Main Card */}
-        <div className="w-[85.33vw] border border-[#D5D7DA] rounded-xl p-[2vw]">
+        <div className="border border-gray-300 rounded-xl p-6 shadow-md">
           {/* Header */}
-          <div className="flex items-center gap-[3vw] mb-[2vw]">
+          <div className="flex items-center gap-4 mb-6">
             <Image
               src="/icons/realestate.png"
               alt="Real Estate"
-              width={70}
-              height={70}
-              className="-translate-x-[-1vw]"
+              width={60}
+              height={60}
             />
             <div>
-              <h2 className="text-[1.53vw] text-[#5200B7] font-semibold">
+              <h2 className="text-2xl text-[#5200B7] font-semibold">
                 Real Estate
               </h2>
-              <p className="text-[0.97vw] text-[#535862]">
+              <p className="text-gray-500">
                 Long-term value from physical properties.
               </p>
             </div>
           </div>
 
-          {/* ===== Card 1: Contract Metadata ===== */}
-          <div className="w-[73.05vw] border border-[#D5D7DA] rounded-lg p-[2vw]">
-            <h3 className="text-[1.25vw] text-[#000000] font-bold mb-[1.5vw]">
-              Contract Metadata
+          {/* Contract Information */}
+          <div className="border border-gray-300 rounded-lg p-6 mb-6">
+            <h3 className="text-xl font-bold text-gray-800 mb-4">
+              Contract Information
             </h3>
-            <div className="w-[68.4vw] h-[1px] bg-[#F5F5F5] mb-[2vw]" />
+            <hr className="my-4 border-gray-200" />
 
-            <div className="flex gap-[2vw]">
-              {/* Upload Image */}
-              <div className="flex flex-col">
-                <label className="text-[#000000] font-medium text-[1.11vw] mb-[0.7vw]">
-                  Image
-                </label>
-                <label className="w-[15vw] h-[14.79vw] border border-[#D5D7DA] rounded-lg flex flex-col justify-center items-center cursor-pointer">
-                  {selectedImage ? (
-                    <img
-                      src={URL.createObjectURL(selectedImage)}
-                      alt="Selected"
-                      className="w-full h-full object-cover rounded-lg"
-                    />
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* Upload Images */}
+              <div className="flex flex-col space-y-2">
+                <label className="text-gray-700 font-medium">Images</label>
+                <label className="border-2 border-dashed border-gray-300 rounded-lg p-4 flex flex-col items-center justify-center cursor-pointer hover:border-purple-400 transition-all">
+                  {selectedImages.length > 0 ? (
+                    <div className="grid grid-cols-2 gap-2 w-full">
+                      {selectedImages.map((img, index) => (
+                        <img
+                          key={index}
+                          src={URL.createObjectURL(img)}
+                          alt={`Preview ${index}`}
+                          className="w-full h-20 object-cover rounded"
+                        />
+                      ))}
+                    </div>
                   ) : (
                     <>
                       <Image
                         src="/icons/upload.png"
                         alt="Upload"
-                        width={30}
-                        height={30}
+                        width={24}
+                        height={24}
                       />
-                      <p className="text-[#717680] text-[0.83vw] font-normal mt-[0.5vw]">
-                        Upload File
-                      </p>
+                      <p className="text-gray-500 text-sm mt-2">Upload Files</p>
                     </>
                   )}
                   <input
                     type="file"
                     accept="image/png, image/jpeg"
+                    multiple
                     onChange={handleFileChange}
                     className="hidden"
                   />
                 </label>
               </div>
 
-              {/* Name, Symbol, Description */}
-              <div className="flex-1 flex flex-col gap-[2vw]">
-                <div className="flex gap-[2vw]">
+              {/* Form Fields */}
+              <div className="md:col-span-2 space-y-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   {/* Name */}
-                  <div className="flex flex-col">
-                    <label className="text-[#000000] font-medium text-[1.11vw] mb-[0.7vw]">
+                  <div className="flex flex-col space-y-1">
+                    <label className="text-gray-700 font-medium">
                       Name <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="text"
-                      placeholder="Type here"
-                      className="w-[31.32vw] h-[2.64vw] border border-[#D5D7DA] rounded-md px-[1vw] text-[0.83vw] text-[#717680] placeholder-[#717680]"
+                      placeholder="Token Name"
+                      value={tokenName}
+                      onChange={(e) => setTokenName(e.target.value)}
+                      disabled={isLoading}
+                      className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-400 text-black placeholder-gray-500"
                     />
                   </div>
-
                   {/* Symbol */}
-                  <div className="flex flex-col">
-                    <label className="text-[#000000] font-medium text-[1.11vw] mb-[0.7vw]">
-                      Symbol
-                    </label>
+                  <div className="flex flex-col space-y-1">
+                    <label className="text-gray-700 font-medium">Symbol</label>
                     <input
                       type="text"
-                      placeholder="Type here"
-                      className="w-[12vw] h-[2.64vw] border border-[#D5D7DA] rounded-md px-[1vw] text-[0.83vw] text-[#717680] placeholder-[#717680]"
+                      placeholder="Token Symbol"
+                      value={tokenSymbol}
+                      onChange={(e) => setTokenSymbol(e.target.value)}
+                      disabled={isLoading}
+                      className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-400 text-black placeholder-gray-500"
                     />
                   </div>
                 </div>
 
-                {/* Description */}
-                <div className="flex flex-col">
-                  <label className="text-[#000000] font-medium text-[1.11vw] mb-[0.7vw]">
-                    Description
-                  </label>
-                  <textarea
-                    placeholder="Type here"
-                    className="w-[51.6vw] h-[8.75vw] border border-[#D5D7DA] rounded-md px-[1vw] py-[1vw] text-[0.83vw] text-[#717680] placeholder-[#717680] resize-none"
-                  />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                  {/* Description */}
+                  <div className="flex flex-col space-y-1">
+                    <label className="text-gray-700 font-medium">
+                      Description
+                    </label>
+                    <textarea
+                      placeholder="Property Description"
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
+                      disabled={isLoading}
+                      rows={5}
+                      className="border border-gray-300 rounded-md px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-purple-400 text-black placeholder-gray-500"
+                    />
+                  </div>
+                  {/* Location */}
+                  <div className="flex flex-col space-y-1">
+                    <label className="text-gray-700 font-medium">
+                      Location
+                    </label>
+                    <textarea
+                      placeholder="Property Location"
+                      value={location}
+                      onChange={(e) => setLocation(e.target.value)}
+                      disabled={isLoading}
+                      rows={5}
+                      className="border border-gray-300 rounded-md px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-purple-400 text-black placeholder-gray-500"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-          {/* ===== End Card 1 ===== */}
 
-          {/* Card 2: Primary Sales */}
-          <div className="w-[73.05vw] border border-[#D5D7DA] rounded-lg p-[2vw] mt-[2vw]">
-            <h3 className="text-[1.25vw] text-[#000000] font-bold mb-[1vw]">
-              Primary Sales
-            </h3>
-            <div className="w-[68.4vw] h-[1px] bg-[#F5F5F5] mb-[1.5vw]" />
-            <div className="flex flex-col gap-[0.7vw]">
-              <label className="text-[1.11vw] text-[#000000] font-medium">
-                Recipient TRO Wallet <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                placeholder="Type here"
-                className="w-[68.4vw] h-[2.64vw] border border-[#D5D7DA] rounded-md px-[1vw] text-[0.83vw] text-[#717680] placeholder-[#717680]"
-              />
-              <p className="text-[1.11vw] text-[#535862] font-medium mt-[0.5vw]">
-                The wallet address that should receive the revenue from initial
-                sales of the assets.
-              </p>
-            </div>
-          </div>
-
-          {/* Card 3: Platform Fees */}
-          <div className="w-[73.05vw] border border-[#D5D7DA] rounded-lg p-[2vw] mt-[2vw]">
-            <h3 className="text-[1.25vw] text-[#000000] font-bold mb-[1vw]">
+          {/* Platform Fees */}
+          <div className="border border-gray-300 rounded-lg p-6 mb-6">
+            <h3 className="text-xl font-bold text-gray-800 mb-2">
               Platform Fees
             </h3>
-            <div className="w-[68.4vw] h-[1px] bg-[#F5F5F5] mb-[1.5vw]" />
-            <p className="text-[1.11vw] text-[#535862] font-normal leading-relaxed">
+            <hr className="my-4 border-gray-200" />
+            <p className="text-gray-600">
               A 2% fee on primary sales supports our mission to make real-world
               assets accessible onchain — funding open infrastructure, ongoing
               development, and verification integrity.{" "}
@@ -381,86 +344,67 @@ export default function DeployPage() {
             </p>
           </div>
 
-          {/* Card 4: Gasless */}
-          <div className="w-[73.05vw] border border-[#D5D7DA] rounded-lg p-[2vw] mt-[2vw]">
-            <h3 className="text-[1.25vw] text-[#000000] font-bold mb-[1vw]">
-              Gasless
-            </h3>
-            <div className="w-[68.4vw] h-[1px] bg-[#F5F5F5] mb-[1.5vw]" />
-            <div className="flex flex-col gap-[0.7vw]">
-              <label className="text-[1.11vw] text-[#000000] font-medium">
-                Trusted Forwarders <span className="text-red-500">*</span>
-              </label>
-              <textarea
-                placeholder="[ ]"
-                className="w-[68.4vw] h-[4.93vw] border border-[#D5D7DA] rounded-md px-[1vw] py-[1vw] text-[0.83vw] text-[#717680] placeholder-[#717680] resize-none"
-              />
-              <p className="text-[1.11vw] text-[#535862] font-medium mt-[0.5vw]">
-                Input should be passed in JSON format - Ex. [&quot;0x....&quot;]
-              </p>
-            </div>
-          </div>
-
-          {/* Card 5: Add to Project */}
-          <div className="w-[73.05vw] border border-[#D5D7DA] rounded-lg p-[2vw] mt-[2vw]">
-            <h3 className="text-[1.25vw] text-[#000000] font-bold mb-[1vw]">
+          {/* Add to Project */}
+          <div className="border border-gray-300 rounded-lg p-6 mb-6">
+            <h3 className="text-xl font-bold text-gray-800 mb-2">
               Add to Project
             </h3>
-            <p className="text-[0.97vw] text-[#535862] font-medium mb-[1.5vw]">
+            <p className="text-gray-600 mb-4">
               Save the deployed contract in a project’s contract list on MyRWA
               and VeriStable dashboard.
             </p>
-            <div className="w-[68.4vw] h-[1px] bg-[#F5F5F5] mb-[2vw]" />
-            <div className="flex items-center gap-[2vw]">
-              {/* Team */}
+            <hr className="my-4 border-gray-200" />
+            <div className="flex items-center gap-4">
               <div className="flex flex-col">
-                <label className="text-[1.11vw] text-[#000000] font-medium mb-[0.7vw]">
-                  Team
-                </label>
+                <label className="text-gray-700 font-medium">Team</label>
                 <Dropdown
                   options={teams}
                   placeholder="Select Team"
-                  width="w-[16.18vw]"
-                  height="h-[2.64vw]"
+                  width="w-48"
+                  height="h-10"
                 />
               </div>
-              <span className="text-[1.25vw] font-semibold">/</span>
-              {/* Project */}
+              <span className="text-xl font-semibold">/</span>
               <div className="flex flex-col">
-                <label className="text-[1.11vw] text-[#000000] font-medium mb-[0.7vw]">
-                  Project
-                </label>
+                <label className="text-gray-700 font-medium">Project</label>
                 <Dropdown
                   options={projects}
                   placeholder="Select Project"
-                  width="w-[16.18vw]"
-                  height="h-[2.64vw]"
+                  width="w-48"
+                  height="h-10"
                 />
               </div>
             </div>
           </div>
 
-          {/* Card 6: Chain */}
-          <div className="w-[73.05vw] border border-[#D5D7DA] rounded-lg p-[2vw] mt-[2vw]">
-            <h3 className="text-[1.25vw] text-[#000000] font-bold mb-[1vw]">
-              Primary Sales
-            </h3>
-            <div className="w-[68.4vw] h-[1px] bg-[#F5F5F5] mb-[1.5vw]" />
-            <div className="flex flex-col gap-[0.7vw]">
-              <label className="text-[1.11vw] text-[#000000] font-medium">
+          {/* Chain Selection */}
+          <div className="border border-gray-300 rounded-lg p-6 mb-6">
+            <h3 className="text-xl font-bold text-gray-800 mb-2">Chain</h3>
+            <hr className="my-4 border-gray-200" />
+            <div className="flex flex-col gap-2">
+              <label className="text-gray-700 font-medium">
                 Chain <span className="text-red-500">*</span>
               </label>
-              <p className="text-[1.11vw] text-[#535862] font-medium">
+              <p className="text-gray-600">
                 Select a network to deploy this contract on.
               </p>
               <Dropdown
                 options={chains}
                 placeholder="Select Chain"
-                width="w-[54vw]"
-                height="h-[2.64vw]"
+                width="w-full max-w-md"
+                height="h-10"
               />
             </div>
           </div>
+
+          {/* Submit Button */}
+          <button
+            onClick={createTokenAndInsert}
+            disabled={isLoading}
+            className="mt-6 bg-green-500 text-white px-6 py-3 rounded-lg w-full hover:bg-green-600 disabled:bg-green-300 transition-colors"
+          >
+            {isLoading ? "Processing..." : "Create Token and Save"}
+          </button>
         </div>
       </div>
     </div>

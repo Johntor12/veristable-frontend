@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import { useState } from "react";
 import { ChevronDown } from "lucide-react";
@@ -16,7 +16,12 @@ interface DropdownProps {
   height?: string; // custom height
 }
 
-export default function Dropdown({ options, placeholder = "Select", width = "w-[16.18vw]", height = "h-[2.64vw]" }: DropdownProps) {
+export default function Dropdown({
+  options,
+  placeholder = "Select",
+  width = "w-[16.18vw]",
+  height = "h-[2.64vw]",
+}: DropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [selected, setSelected] = useState<Option | null>(null);
 
@@ -36,7 +41,13 @@ export default function Dropdown({ options, placeholder = "Select", width = "w-[
       >
         <div className="flex items-center gap-2">
           {selected?.icon && (
-            <Image src={selected.icon} alt="" width={21} height={21} className="rounded-full" />
+            <Image
+              src={selected.icon}
+              alt=""
+              width={21}
+              height={21}
+              className="rounded-full"
+            />
           )}
           {selected ? selected.label : placeholder}
         </div>
@@ -44,15 +55,23 @@ export default function Dropdown({ options, placeholder = "Select", width = "w-[
       </button>
 
       {isOpen && (
-        <div className={`absolute top-[105%] left-0 z-10 bg-white border border-[#D5D7DA] rounded-md shadow-md ${width}`}>
+        <div
+          className={`absolute top-[105%] left-0 z-10 bg-white border border-[#D5D7DA] rounded-md shadow-md ${width}`}
+        >
           {options.map((option, idx) => (
             <div
               key={idx}
               onClick={() => handleSelect(option)}
-              className="flex items-center gap-2 px-[1vw] py-[0.8vw] hover:bg-gray-100 cursor-pointer text-[0.83vw]"
+              className="flex items-center gap-2 px-[1vw] py-[0.8vw] hover:bg-gray-100 cursor-pointer text-[0.83vw] text-black"
             >
               {option.icon && (
-                <Image src={option.icon} alt="" width={21} height={21} className="rounded-full" />
+                <Image
+                  src={option.icon}
+                  alt=""
+                  width={21}
+                  height={21}
+                  className="rounded-full"
+                />
               )}
               {option.label}
             </div>
