@@ -2,6 +2,7 @@
 
 import Logo from "../assets/Logo_Veristable.png";
 import Image from "next/image";
+import Link from "next/link";
 // import Button from "./Button";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 
@@ -19,10 +20,25 @@ const Navbar = () => {
             />
             <p className="font-jakarta text-[1.25vw] font-bold">Veristable</p>
           </div>
-          <div className="grid grid-cols-13 justify-items-end items-center h-full gap-[2.667vw] text-black">
-            <p className="col-span-3 font-jakarta text-[1.111vw]">ExploreRWA</p>
-            <p className="col-span-3 font-jakarta text-[1.111vw]">MyRWA</p>
-            <p className="col-span-3 font-jakarta text-[1.111vw]">Dashboard</p>
+          <nav className="grid grid-cols-13 justify-items-end items-center h-full gap-[2.667vw] text-black">
+            <Link
+              href="/explore-rwa"
+              className="col-span-3 font-jakarta text-[1.111vw]"
+            >
+              ExploreRWA
+            </Link>
+            <Link
+              href="/myrwa"
+              className="col-span-3 font-jakarta text-[1.111vw]"
+            >
+              MyRWA
+            </Link>
+            <Link
+              href="/dashboard"
+              className="col-span-3 font-jakarta text-[1.111vw]"
+            >
+              Dashboard
+            </Link>
             <div className="col-span-4 font-jakarta text-[1.111vw]">
               <ConnectButton
                 chainStatus="icon"
@@ -33,7 +49,7 @@ const Navbar = () => {
                 label="Connect Wallet"
               />
             </div>
-          </div>
+          </nav>
         </div>
       </div>
     </div>
