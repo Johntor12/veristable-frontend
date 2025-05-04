@@ -51,8 +51,8 @@ type TokenAction = {
 };
 
 type TokenProps = {
-  contractAddress: string;
-  owner: string;
+  contractAddress?: string;
+  owner?: string;
 };
 
 type ActionTokenCardProps = TokenAction & {
@@ -83,7 +83,10 @@ const ActionTokenCard = ({
   );
 };
 
-const TokenCard = ({ contractAddress, owner }: TokenProps) => {
+const TokenCard = ({
+  contractAddress = "0x123",
+  owner = "unknown",
+}: TokenProps) => {
   const { address: account } = useAccount();
   const { data: walletClient } = useWalletClient();
   const [totalSupply, setTotalSupply] = useState(0);
