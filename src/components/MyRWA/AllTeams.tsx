@@ -1,5 +1,3 @@
-import Image from "next/image";
-import Button from "../Button";
 import TeamCard from "./TeamCard";
 
 export type TeamCardProps = {

@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import Dropdown from "@/components/Dropdown";
+
 import { useAccount, useWalletClient } from "wagmi";
 import { ethers } from "ethers";
 import { createClient } from "@supabase/supabase-js";
@@ -26,6 +27,7 @@ const TokenFactoryABI = [
 
 // Alamat Kontrak di Pharos Network (NEW)
 const factoryAddress = "0x9C34c7d588C2db8f5f4626C5e8C6E51cffFDF9e1";
+
 
 const teams = [
   { label: "Your Team", icon: "/icons/team.png" },

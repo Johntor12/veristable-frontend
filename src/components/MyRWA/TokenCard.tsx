@@ -77,8 +77,8 @@ type TokenAction = {
 };
 
 type TokenProps = {
-  contractAddress: string;
-  owner: string;
+  contractAddress?: string;
+  // owner?: string;
 };
 
 type ActionTokenCardProps = TokenAction & {
@@ -109,7 +109,7 @@ const ActionTokenCard = ({
   );
 };
 
-const TokenCard = ({ contractAddress, owner }: TokenProps) => {
+const TokenCard = ({ contractAddress }: TokenProps) => {
   const { address: account } = useAccount();
   const { data: walletClient } = useWalletClient();
   const [totalSupply, setTotalSupply] = useState(0);
@@ -308,7 +308,7 @@ const TokenCard = ({ contractAddress, owner }: TokenProps) => {
           symbol,
           lastUpdateTimestamp: new Date(timestamp * 1000).toLocaleString(),
         });
-      } catch (err: any) {
+      } catch (err: string) {
         console.error("Error fetching token data:", err);
         setErrorMessage(
           `Failed to load token data: ${err.reason || err.message || "Unknown error"}`

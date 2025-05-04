@@ -2,12 +2,12 @@ import Image from "next/image";
 import DummyHouse from "../../assets/MyRWA/Dummy_Image_RWA.png";
 import { IoMdCopy, IoIosOpen } from "react-icons/io";
 import { HiCheck } from "react-icons/hi";
-import { useState, useMemo } from "react";
+import { useMemo } from "react";
 import RegisteredOperators from "./RegisteredOperators";
 import TokenCard from "./TokenCard";
 import AnalyticsCard from "./AnalyticsCard";
 import TeamCard from "./TeamCard";
-import TokenPopup from "./TokenPopup";
+// import TokenPopup from "./TokenPopup";
 
 type AfterDeployProps = {
   contractAddress?: string;
@@ -125,11 +125,11 @@ const ContractChecklist = ({ steps }: ContractChecklistProps) => {
 };
 
 const AfterDeploy = ({ contractAddress = "0x123" }: AfterDeployProps) => {
-  const [steps, setSteps] = useState([
+  const steps = [
     { id: 1, label: "Contract Deployment", completed: true },
     { id: 2, label: "Verify", completed: false },
     { id: 3, label: "Mint", completed: false },
-  ]);
+  ];
   return (
     <div className="flex flex-col gap-[1.667vw] w-full min-h-screen bg-white pt-[3vw]">
       <RWAInformation contractAddress={contractAddress} />

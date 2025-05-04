@@ -147,17 +147,19 @@ const TokenPopup = ({
       } else {
         throw new Error("Verification failed: message is not true");
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Error:", err);
-      if (isConnected) {
-        // Langkah 1 berhasil, tetapi langkah 3 gagal
-        setSuccessMessage("Success to Connect and Verify Failed");
-        setIsVerified(false);
-      } else {
-        // Langkah 1 gagal
-        setError(`Failed to connect to bank: ${err.message}`);
-        setIsConnected(false);
-        setIsVerified(false);
+      if (err instanceof Error) {
+        if (isConnected) {
+          // Langkah 1 berhasil, tetapi langkah 3 gagal
+          setSuccessMessage("Success to Connect and Verify Failed");
+          setIsVerified(false);
+        } else {
+          // Langkah 1 gagal
+          setError(`Failed to connect to bank: ${err.message}`);
+          setIsConnected(false);
+          setIsVerified(false);
+        }
       }
     } finally {
       setIsLoading(false);
@@ -274,7 +276,7 @@ const TokenPopup = ({
             step="0.0001"
             min="0.0001"
             placeholder={`Enter amount to ${type.toLowerCase()}`}
-            value={amount}
+            value={amountReserve?.toString()}
             onChange={(e) => setAmount(e.target.value)}
             className="w-full font-jakarta text-[0.972vw] text-[#717680] border px-3 py-2 rounded bg-white"
             disabled={isLoading}

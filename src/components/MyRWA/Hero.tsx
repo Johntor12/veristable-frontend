@@ -1,8 +1,6 @@
 "use client";
 
 import Image from "next/image";
-import { useState, useMemo } from "react";
-import { useRouter } from "next/navigation";
 
 // Tipe untuk Card dan Section
 type Card = {
@@ -20,106 +18,17 @@ type Section = {
 
 type HeroProps = {
   sections?: Section[];
+  searchKeyword?: string;
+  setSearchKeyword?: (value: string) => void;
 };
 
-const realEstateData = {
-  sections: [
-    {
-      heading: "Popular",
-      caption:
-        "Discover the most in-demand Real World Assets in the market — highly trusted and widely adopted by users.",
-      cards: [
-        {
-          badge: "Audited",
-          title: "Real Estate",
-          description: "Long-term value from physical properties.",
-          by: "companyA",
-        },
-        {
-          badge: "Audited",
-          title: "Carbon Credits",
-          description: "Earn from verified climate projects",
-          by: "companyB",
-        },
-        {
-          badge: "Audited",
-          title: "Commodities",
-          description: "Trade real assets like gold and oil",
-          by: "companyC",
-        },
-      ],
-    },
-    {
-      heading: "Trending This Week",
-      caption:
-        "Check out what's gaining attention this week — assets that are attracting the most user activity",
-      cards: [
-        {
-          badge: "Audited",
-          title: "Real Estate",
-          description: "Long-term value from physical properties.",
-          by: "companyA",
-        },
-        {
-          badge: "Audited",
-          title: "Carbon Credits",
-          description: "Earn from verified climate projects",
-          by: "companyB",
-        },
-        {
-          badge: "Audited",
-          title: "Commodities",
-          description: "Trade real assets like gold and oil",
-          by: "companyC",
-        },
-      ],
-    },
-    {
-      heading: "Recommendation",
-      caption:
-        "Curated assets tailored to your profile and market trends. Discover smart picks to grow and diversify your portfolio.",
-      cards: [
-        {
-          badge: "Audited",
-          title: "Real Estate",
-          description: "Long-term value from physical properties.",
-          by: "companyA",
-        },
-        {
-          badge: "Audited",
-          title: "Carbon Credits",
-          description: "Earn from verified climate projects",
-          by: "companyB",
-        },
-        {
-          badge: "Audited",
-          title: "Commodities",
-          description: "Trade real assets like gold and oil",
-          by: "companyC",
-        },
-      ],
-    },
-  ],
-};
-
-const HeroRWA = ({ sections = realEstateData.sections }: HeroProps) => {
-  const router = useRouter();
-  // State untuk input search
-  const [searchKeyword, setSearchKeyword] = useState("");
+const HeroRWA = ({
+  searchKeyword = "",
+  setSearchKeyword = () => {},
+}: HeroProps) => {
+  // const router = useRouter();
 
   // Filter sections berdasarkan searchKeyword
-  const filteredSections = useMemo(() => {
-    const keyword = searchKeyword.toLowerCase();
-    return sections?.map((section) => ({
-      ...section,
-      cards: section.cards.filter(
-        (card) =>
-          card.title.toLowerCase().includes(keyword) ||
-          card.description.toLowerCase().includes(keyword) ||
-          card.by.toLowerCase().includes(keyword)
-      ),
-    }));
-  }, [searchKeyword]);
 
   // Fungsi searching
   const handleSearch = () => {
@@ -127,9 +36,9 @@ const HeroRWA = ({ sections = realEstateData.sections }: HeroProps) => {
   };
 
   // Function to handle "Deploy" button click
-  const handleDeploy = (assetType: string) => {
-    router.push(`/deploy/${assetType.replace(/\s/g, "")}`);
-  };
+  // const handleDeploy = (assetType: string) => {
+  //   router.push(`/deploy/${assetType.replace(/\s/g, "")}`);
+  // };
 
   return (
     <div className="flex flex-col lg:flex-row justify-between items-center gap-8 mb-2">
@@ -175,6 +84,35 @@ const HeroRWA = ({ sections = realEstateData.sections }: HeroProps) => {
           />
         </div>
       </div>
+
+      {/* Render filteredSections */}
+      {/* <div className="w-full max-w-6xl mx-auto mt-8">
+        {filteredSections.map((section, index) => (
+          <div key={index} className="mb-10">
+            <h2 className="text-xl font-semibold text-[#420092] mb-1">
+              {section.heading}
+            </h2>
+            <p className="text-sm text-gray-500 mb-4">{section.caption}</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {section.cards.map((card, cardIdx) => (
+                <div
+                  key={cardIdx}
+                  className="p-4 border border-gray-300 rounded-lg shadow-sm"
+                >
+                  <span className="text-xs font-semibold bg-purple-100 text-purple-700 px-2 py-1 rounded-full">
+                    {card.badge}
+                  </span>
+                  <h3 className="text-lg font-bold mt-2">{card.title}</h3>
+                  <p className="text-sm text-gray-600 mt-1">
+                    {card.description}
+                  </p>
+                  <p className="text-sm text-gray-400 mt-2">by {card.by}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div> */}
     </div>
   );
 };

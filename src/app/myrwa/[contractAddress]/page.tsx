@@ -12,6 +12,13 @@ import TokenCard from "@/components/MyRWA/TokenCard";
 import AnalyticsCard from "@/components/MyRWA/AnalyticsCard";
 import TeamCard from "@/components/MyRWA/TeamCard";
 
+type RWAData = {
+  name: string;
+  address: string;
+  owner: string;
+  description?: string;
+  image?: string[];
+};
 // Supabase Client Setup
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
@@ -42,7 +49,7 @@ const SmartContractInformation = ({ label }: { label: string }) => {
 };
 
 // Komponen RWAInformation
-const RWAInformation = ({ data }: { data: any }) => {
+const RWAInformation = ({ data }: { data: RWAData }) => {
   return (
     <div className="flex flex-row w-[49.722vw] aspect-[716/100] gap-[1.111vw]">
       <div className="relative w-[6.994vw] aspect-[150/100]">
@@ -50,9 +57,9 @@ const RWAInformation = ({ data }: { data: any }) => {
           src={data.image?.[0] || DummyHouse.src}
           alt="RWA Image"
           fill
-          onError={() =>
-            console.error("Failed to load image:", data.image?.[0])
-          }
+          onError={(e) => {
+            e.currentTarget.src = DummyHouse.src;
+          }}
         />
       </div>
       <div className="flex flex-col text-[2.5vw] text-black font-jakarta w-[41.667vw] aspect-[596/99]">
@@ -140,7 +147,7 @@ const ContractChecklist = ({ steps }: { steps: Step[] }) => {
 // Halaman Detail RWA
 const RWADetailPage = () => {
   const { contractAddress } = useParams();
-  const [rwaData, setRwaData] = useState<any>(null);
+  const [rwaData, setRwaData] = useState<RWAData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [steps, setSteps] = useState<Step[]>([
