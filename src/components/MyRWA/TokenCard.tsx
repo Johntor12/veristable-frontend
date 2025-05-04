@@ -10,6 +10,19 @@ import { useState, useEffect } from "react";
 import TokenPopup from "./TokenPopup";
 import { useAccount, useWalletClient } from "wagmi";
 import { ethers } from "ethers";
+import { createClient } from "@supabase/supabase-js";
+
+// Supabase Configuration
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
+
+// Validate Supabase configuration
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.error(
+    "Supabase configuration missing. Please set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in .env.local"
+  );
+}
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 // ABI dan Alamat Kontrak
 const TokenFactoryABI = [
@@ -52,7 +65,7 @@ const VeristableAVSABI = [
   "function unclaimedRewards(address token, address underwriter) public view returns (uint128)",
 ];
 
-// Alamat Kontrak di Pharos Network (NEW)
+// Alamat Kontrak di Pharos Network
 const reserveAddress = "0xb080914D90A76EC677a9d288e9BF03B9a052769d";
 const veristableAVSAddress = "0x9Ec9eb3E56B0B66948dB51ce98A56cA7a5b49Ad7";
 
@@ -102,31 +115,141 @@ const TokenCard = ({ contractAddress }: TokenProps) => {
   const [totalSupply, setTotalSupply] = useState(0);
   const [ownedByYou, setOwnedByYou] = useState(0);
   const [reserveBalance, setReserveBalance] = useState(0);
+  const [lastUpdateTimestamp, setLastUpdateTimestamp] = useState("");
   const [decimals, setDecimals] = useState(18);
   const [symbol, setSymbol] = useState("BAL");
   const [isPopupOpen, setIsPopupOpen] = useState(false);
   const [popupType, setPopupType] = useState<"Mint" | "Burn" | "Reserve">(
     "Mint"
   );
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingBalance, setIsLoadingBalance] = useState(true);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // Log contractAddress untuk debugging
+  // Test Supabase connectivity on component mount
+  useEffect(() => {
+    const testSupabase = async () => {
+      console.log("Testing Supabase connectivity...");
+      try {
+        const { data, error } = await supabase
+          .from("real_estate")
+          .select("address")
+          .limit(1);
+        console.log("Supabase test result:", { data, error });
+        if (error) {
+          console.error("Supabase connectivity test failed:", error);
+        } else {
+          console.log("Supabase connectivity test successful. Data:", data);
+        }
+      } catch (err) {
+        console.error("Supabase connectivity test error:", err);
+      }
+    };
+    testSupabase();
+  }, []);
+
+  // Log contractAddress dan owner untuk debugging
   useEffect(() => {
     console.log("Received contractAddress:", contractAddress);
-    console.log("Is valid address:", ethers.isAddress(contractAddress));
-  }, [contractAddress]);
+    console.log("Received owner:", owner);
+    console.log("Is valid contractAddress:", ethers.isAddress(contractAddress));
+    console.log("Is valid owner:", ethers.isAddress(owner));
+  }, [contractAddress, owner]);
 
-  // Fetch data token dari kontrak
+  // Fungsi untuk menyimpan data ke Supabase
+  const saveToSupabase = async (
+    onchainTotalSupply: number,
+    onchainReserveBalance: number
+  ) => {
+    if (!ethers.isAddress(contractAddress)) {
+      console.error("Invalid contract address for Supabase:", contractAddress);
+      setErrorMessage("Invalid contract address for saving to Supabase");
+      return;
+    }
+
+    if (!ethers.isAddress(owner)) {
+      console.error("Invalid owner address for Supabase:", owner);
+      setErrorMessage("Invalid owner address for saving to Supabase");
+      return;
+    }
+
+    const realEstateData = {
+      address: contractAddress,
+      owner: owner,
+      reserve: Math.floor(onchainReserveBalance),
+      totalSupply: Math.floor(onchainTotalSupply),
+    };
+
+    try {
+      console.log(
+        "Attempting to save to Supabase real_estate table:",
+        realEstateData
+      );
+
+      // Check if row exists
+      const { data: existingData, error: selectError } = await supabase
+        .from("real_estate")
+        .select("address")
+        .eq("address", contractAddress)
+        .single();
+
+      console.log("Supabase select response:", { existingData, selectError });
+
+      if (selectError && selectError.code !== "PGRST116") {
+        console.error("Supabase select error:", selectError);
+        throw new Error(
+          `Failed to check existing data: ${selectError.message || JSON.stringify(selectError)}`
+        );
+      }
+
+      let data, error;
+      if (existingData) {
+        // Update existing row
+        ({ data, error } = await supabase
+          .from("real_estate")
+          .update({
+            owner: owner,
+            reserve: Math.floor(onchainReserveBalance),
+            totalSupply: Math.floor(onchainTotalSupply),
+          })
+          .eq("address", contractAddress));
+      } else {
+        // Insert new row
+        ({ data, error } = await supabase
+          .from("real_estate")
+          .insert([realEstateData]));
+      }
+
+      console.log("Supabase operation response:", { data, error });
+
+      if (error) {
+        console.error("Supabase operation error:", error);
+        throw new Error(
+          `Failed to save to Supabase: ${error.message || JSON.stringify(error)}`
+        );
+      }
+
+      console.log("Successfully saved to Supabase real_estate table:", data);
+    } catch (err: any) {
+      console.error("Error saving to Supabase:", err);
+      setErrorMessage(
+        `Failed to save to Supabase: ${err.message || "Unknown error"}`
+      );
+    }
+  };
+
+  // Fetch data token dari kontrak (tanpa menyimpan ke Supabase)
   useEffect(() => {
     const fetchTokenData = async () => {
-      if (!walletClient || !account) {
-        setLoading(true);
+      if (!walletClient || !account || !ethers.isAddress(contractAddress)) {
+        setErrorMessage("Invalid token address or wallet not connected.");
+        setIsLoadingBalance(true);
         return;
       }
 
       try {
-        setLoading(true);
+        setIsLoadingBalance(true);
+        setErrorMessage(null);
         console.log("Fetching token data...");
         console.log("Account:", account);
         console.log("WalletClient:", walletClient);
@@ -144,29 +267,34 @@ const TokenCard = ({ contractAddress }: TokenProps) => {
           provider
         );
 
+        // Ambil decimals dan konversi ke number
+        const decimalsBigInt = await tokenContract.decimals();
+        const decimals = Number(decimalsBigInt);
+        setDecimals(decimals);
+
         // Ambil totalSupply
         const totalSupplyRaw = await tokenContract.totalSupply();
-        const decimals = await tokenContract.decimals();
-        const totalSupply = Number(
+        const totalSupply = parseFloat(
           ethers.formatUnits(totalSupplyRaw, decimals)
         );
         setTotalSupply(totalSupply);
 
         // Ambil balanceOf (owned by you)
         const balanceRaw = await tokenContract.balanceOf(account);
-        const balance = Number(ethers.formatUnits(balanceRaw, decimals));
+        const balance = parseFloat(ethers.formatUnits(balanceRaw, decimals));
         setOwnedByYou(balance);
 
-        // Ambil reserve balance
-        const reserveBalanceRaw =
-          await reserveContract.getReserveBalance(contractAddress);
-        const reserveBalance = Number(
+        // Ambil reserve balance dan timestamp
+        const [reserveBalanceRaw, timestampBigInt] = await Promise.all([
+          reserveContract.getReserveBalance(contractAddress),
+          reserveContract.getLastUpdateTimestamp(),
+        ]);
+        const reserveBalance = parseFloat(
           ethers.formatUnits(reserveBalanceRaw, decimals)
         );
+        const timestamp = Number(timestampBigInt);
         setReserveBalance(reserveBalance);
-
-        // Ambil decimals
-        setDecimals(Number(decimals));
+        setLastUpdateTimestamp(new Date(timestamp * 1000).toLocaleString());
 
         // Ambil symbol
         const symbol = await tokenContract.symbol();
@@ -178,14 +306,17 @@ const TokenCard = ({ contractAddress }: TokenProps) => {
           reserveBalance,
           decimals,
           symbol,
+          lastUpdateTimestamp: new Date(timestamp * 1000).toLocaleString(),
         });
       } catch (err: string) {
         console.error("Error fetching token data:", err);
-        setError(
+        setErrorMessage(
           `Failed to load token data: ${err.reason || err.message || "Unknown error"}`
         );
+        setReserveBalance(0);
+        setLastUpdateTimestamp("N/A");
       } finally {
-        setLoading(false);
+        setIsLoadingBalance(false);
       }
     };
 
@@ -195,25 +326,31 @@ const TokenCard = ({ contractAddress }: TokenProps) => {
   // Fungsi untuk mint token
   const handleMint = async (amount: number) => {
     if (!walletClient || !account) {
-      alert("Please connect your wallet!");
+      setErrorMessage("Please connect your wallet!");
       return;
     }
 
-    if (amount <= 0) {
-      alert("Amount must be greater than 0");
+    if (amount <= 0 || isNaN(amount)) {
+      setErrorMessage("Amount must be greater than 0");
       return;
     }
 
     try {
-      setLoading(true);
+      setIsLoading(true);
+      setErrorMessage(null);
       const provider = new ethers.BrowserProvider(walletClient);
       const signer = await provider.getSigner();
       const contract = new ethers.Contract(contractAddress, TokenABI, signer);
+      const reserveContract = new ethers.Contract(
+        reserveAddress,
+        ReserveABI,
+        provider
+      );
 
       // Validasi bahwa hanya owner yang bisa mint
       const contractOwner = await contract.owner();
       if (contractOwner.toLowerCase() !== account.toLowerCase()) {
-        alert("Only the contract owner can mint tokens");
+        setErrorMessage("Only the contract owner can mint tokens");
         return;
       }
 
@@ -224,50 +361,71 @@ const TokenCard = ({ contractAddress }: TokenProps) => {
       const tx = await contract.mint(account, amountRaw);
       await tx.wait();
 
-      // Perbarui state setelah mint
+      // Ambil data onchain terbaru
       const totalSupplyRaw = await contract.totalSupply();
-      setTotalSupply(Number(ethers.formatUnits(totalSupplyRaw, decimals)));
+      const newTotalSupply = parseFloat(
+        ethers.formatUnits(totalSupplyRaw, decimals)
+      );
       const balanceRaw = await contract.balanceOf(account);
-      setOwnedByYou(Number(ethers.formatUnits(balanceRaw, decimals)));
+      const newBalance = parseFloat(ethers.formatUnits(balanceRaw, decimals));
+      const reserveBalanceRaw =
+        await reserveContract.getReserveBalance(contractAddress);
+      const newReserveBalance = parseFloat(
+        ethers.formatUnits(reserveBalanceRaw, decimals)
+      );
 
+      // Perbarui state
+      setTotalSupply(newTotalSupply);
+      setOwnedByYou(newBalance);
+
+      // Simpan ke Supabase dengan data onchain
+      await saveToSupabase(newTotalSupply, newReserveBalance);
+
+      setErrorMessage(null);
       alert(`Successfully minted ${amount} ${symbol}!`);
     } catch (err: any) {
       console.error("Error minting token:", err);
-      alert(
+      setErrorMessage(
         `Failed to mint token: ${err.reason || err.message || "Unknown error"}`
       );
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
   // Fungsi untuk burn token
   const handleBurn = async (amount: number) => {
     if (!walletClient || !account) {
-      alert("Please connect your wallet!");
+      setErrorMessage("Please connect your wallet!");
       return;
     }
 
-    if (amount <= 0) {
-      alert("Amount must be greater than 0");
+    if (amount <= 0 || isNaN(amount)) {
+      setErrorMessage("Amount must be greater than 0");
       return;
     }
 
     if (amount > ownedByYou) {
-      alert("Cannot burn more tokens than you own");
+      setErrorMessage("Cannot burn more tokens than you own");
       return;
     }
 
     try {
-      setLoading(true);
+      setIsLoading(true);
+      setErrorMessage(null);
       const provider = new ethers.BrowserProvider(walletClient);
       const signer = await provider.getSigner();
       const contract = new ethers.Contract(contractAddress, TokenABI, signer);
+      const reserveContract = new ethers.Contract(
+        reserveAddress,
+        ReserveABI,
+        provider
+      );
 
       // Validasi bahwa hanya owner yang bisa burn
       const contractOwner = await contract.owner();
       if (contractOwner.toLowerCase() !== account.toLowerCase()) {
-        alert("Only the contract owner can burn tokens");
+        setErrorMessage("Only the contract owner can burn tokens");
         return;
       }
 
@@ -278,83 +436,115 @@ const TokenCard = ({ contractAddress }: TokenProps) => {
       const tx = await contract.burn(amountRaw);
       await tx.wait();
 
-      // Perbarui state setelah burn
+      // Ambil data onchain terbaru
       const totalSupplyRaw = await contract.totalSupply();
-      setTotalSupply(Number(ethers.formatUnits(totalSupplyRaw, decimals)));
+      const newTotalSupply = parseFloat(
+        ethers.formatUnits(totalSupplyRaw, decimals)
+      );
       const balanceRaw = await contract.balanceOf(account);
-      setOwnedByYou(Number(ethers.formatUnits(balanceRaw, decimals)));
+      const newBalance = parseFloat(ethers.formatUnits(balanceRaw, decimals));
+      const reserveBalanceRaw =
+        await reserveContract.getReserveBalance(contractAddress);
+      const newReserveBalance = parseFloat(
+        ethers.formatUnits(reserveBalanceRaw, decimals)
+      );
 
+      // Perbarui state
+      setTotalSupply(newTotalSupply);
+      setOwnedByYou(newBalance);
+
+      // Simpan ke Supabase dengan data onchain
+      await saveToSupabase(newTotalSupply, newReserveBalance);
+
+      setErrorMessage(null);
       alert(`Successfully burned ${amount} ${symbol}!`);
     } catch (err: any) {
       console.error("Error burning token:", err);
-      alert(
+      setErrorMessage(
         `Failed to burn token: ${err.reason || err.message || "Unknown error"}`
       );
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
-  // Fungsi untuk reserve token (underwrite)
+  // Fungsi untuk set reserve balance
   const handleReserve = async (amount: number) => {
     if (!walletClient || !account) {
-      alert("Please connect your wallet!");
+      setErrorMessage("Please connect your wallet!");
       return;
     }
 
-    if (amount <= 0) {
-      alert("Amount must be greater than 0");
+    if (!ethers.isAddress(contractAddress)) {
+      setErrorMessage("Invalid token address.");
+      return;
+    }
+
+    if (amount <= 0 || isNaN(amount)) {
+      setErrorMessage("Please enter a valid positive reserve amount.");
       return;
     }
 
     try {
-      setLoading(true);
+      setIsLoading(true);
+      setErrorMessage(null);
+
       const provider = new ethers.BrowserProvider(walletClient);
       const signer = await provider.getSigner();
-      const veristableAVSContract = new ethers.Contract(
-        veristableAVSAddress,
-        VeristableAVSABI,
-        signer
-      );
       const reserveContract = new ethers.Contract(
         reserveAddress,
         ReserveABI,
         signer
       );
+      const tokenContract = new ethers.Contract(
+        contractAddress,
+        TokenABI,
+        provider
+      );
 
-      // Konversi amount ke format uint128 yang sesuai
+      // Konversi amount ke format yang sesuai dengan decimals
       const amountRaw = ethers.parseUnits(amount.toString(), decimals);
 
-      // Panggil fungsi underwrite di VeristableAVS
-      const underwriteTx = await veristableAVSContract.underwrite(
+      // Panggil fungsi setReserveBalance
+      const tx = await reserveContract.setReserveBalance(
         contractAddress,
         amountRaw
       );
-      await underwriteTx.wait();
+      await tx.wait();
 
-      // Update reserve balance di Reserve contract
-      const newReserveBalance = reserveBalance + amount;
-      const reserveTx = await reserveContract.setReserveBalance(
-        contractAddress,
-        ethers.parseUnits(newReserveBalance.toString(), decimals)
-      );
-      await reserveTx.wait();
-
-      // Perbarui state setelah reserve
+      // Ambil data onchain terbaru
       const reserveBalanceRaw =
         await reserveContract.getReserveBalance(contractAddress);
-      setReserveBalance(
-        Number(ethers.formatUnits(reserveBalanceRaw, decimals))
+      const newReserveBalance = parseFloat(
+        ethers.formatUnits(reserveBalanceRaw, decimals)
       );
+      const totalSupplyRaw = await tokenContract.totalSupply();
+      const newTotalSupply = parseFloat(
+        ethers.formatUnits(totalSupplyRaw, decimals)
+      );
+      const timestampBigInt = await reserveContract.getLastUpdateTimestamp();
+      const timestamp = Number(timestampBigInt);
 
-      alert(`Successfully reserved ${amount} ${symbol}!`);
+      // Perbarui state
+      setReserveBalance(newReserveBalance);
+      setLastUpdateTimestamp(new Date(timestamp * 1000).toLocaleString());
+
+      // Simpan ke Supabase dengan data onchain
+      await saveToSupabase(newTotalSupply, newReserveBalance);
+
+      setErrorMessage(null);
+      alert(`Successfully set reserve balance to ${amount} ${symbol}!`);
     } catch (err: any) {
-      console.error("Error reserving token:", err);
-      alert(
-        `Failed to reserve token: ${err.reason || err.message || "Unknown error"}`
-      );
+      console.error("Error setting reserve balance:", err);
+      let userMessage = "Failed to set reserve balance.";
+      if (err.reason) {
+        userMessage += ` Reason: ${err.reason}`;
+      } else if (err.message) {
+        userMessage += ` Error: ${err.message}`;
+      }
+      setErrorMessage(userMessage);
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
@@ -431,10 +621,10 @@ const TokenCard = ({ contractAddress }: TokenProps) => {
     );
   }
 
-  if (error) {
+  if (errorMessage && !isLoadingBalance) {
     return (
       <div className="flex flex-col bg-transparent p-[1.994vw] w-[51.667vw] aspect-[744/262] rounded-[0.694vw] border-2 border-[#D5D7DA] gap-[1.833vw]">
-        <p className="text-red-500 font-jakarta">{error}</p>
+        <p className="text-red-500 font-jakarta">{errorMessage}</p>
       </div>
     );
   }
@@ -461,9 +651,9 @@ const TokenCard = ({ contractAddress }: TokenProps) => {
           <p className="font-jakarta text-[1.25vw] leading-[1.875vw] text-black font-bold border-b-2 border-[#D5D7DA]">
             Reserve Details
           </p>
-          {loading ? (
+          {isLoadingBalance ? (
             <p className="font-jakarta text-[0.833vw] text-[#717680]">
-              Loading token data...
+              Loading reserve data...
             </p>
           ) : (
             <div className="flex flex-row justify-between">
@@ -475,7 +665,20 @@ const TokenCard = ({ contractAddress }: TokenProps) => {
                   {reserveBalance} {symbol}
                 </div>
               </div>
+              <div className="flex flex-col">
+                <p className="font-jakarta text-[0.833vw] leading-[1.25vw] text-[#717680]">
+                  Last Update
+                </p>
+                <div className="text-[1.111vw] font-bold text-black leading-[1.667vw]">
+                  {lastUpdateTimestamp || "N/A"}
+                </div>
+              </div>
             </div>
+          )}
+          {errorMessage && (
+            <p className="text-red-500 font-jakarta text-[0.833vw]">
+              {errorMessage}
+            </p>
           )}
         </div>
 
@@ -483,7 +686,7 @@ const TokenCard = ({ contractAddress }: TokenProps) => {
           <p className="font-jakarta text-[1.25vw] leading-[1.875vw] text-black font-bold border-b-2 border-[#D5D7DA]">
             Token Details
           </p>
-          {loading ? (
+          {isLoadingBalance ? (
             <p className="font-jakarta text-[0.833vw] text-[#717680]">
               Loading token data...
             </p>
@@ -523,7 +726,10 @@ const TokenCard = ({ contractAddress }: TokenProps) => {
         onClose={() => setIsPopupOpen(false)}
         onSubmit={handlePopupSubmit}
         totalSupply={totalSupply}
+        reserveBalance={reserveBalance}
         symbol={symbol}
+        isLoading={isLoading}
+        errorMessage={errorMessage}
       />
     </>
   );
