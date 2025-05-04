@@ -15,13 +15,13 @@ type TokenPopupProps = {
 // Fungsi untuk mendekode JWT token
 const decodeJwtToken = (token: string) => {
   try {
-    const base64Url = token.split('.')[1];
-    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const base64Url = token.split(".")[1];
+    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
     const jsonPayload = decodeURIComponent(
       atob(base64)
-        .split('')
-        .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
-        .join('')
+        .split("")
+        .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+        .join("")
     );
     return JSON.parse(jsonPayload);
   } catch (err) {
@@ -60,21 +60,29 @@ const TokenPopup = ({
 
     try {
       // Langkah 1: Login
-      console.log("Sending login request to:", "https://mockup-backend-seven.vercel.app/login");
+      console.log(
+        "Sending login request to:",
+        "https://mockup-backend-seven.vercel.app/login"
+      );
       console.log("Request body:", { username, password });
 
-      const loginResponse = await fetch("https://mockup-backend-seven.vercel.app/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ username, password }),
-      });
+      const loginResponse = await fetch(
+        "https://mockup-backend-seven.vercel.app/login",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ username, password }),
+        }
+      );
 
       console.log("Login response status:", loginResponse.status);
       if (!loginResponse.ok) {
         const text = await loginResponse.text();
-        throw new Error(`HTTP error! status: ${loginResponse.status}, message: ${text}`);
+        throw new Error(
+          `HTTP error! status: ${loginResponse.status}, message: ${text}`
+        );
       }
 
       const loginData = await loginResponse.json();
@@ -100,7 +108,10 @@ const TokenPopup = ({
       const token = loginData.token; // Gunakan nama "token" sesuai dengan yang diharapkan server
       const RWASupply = totalSupply; // Ambil dari Current Reserve Balance
 
-      console.log("Sending verify request to:", "https://veristable-render-cool-frog-1562.fly.dev/verify");
+      console.log(
+        "Sending verify request to:",
+        "https://veristable-render-cool-frog-1562.fly.dev/verify"
+      );
       console.log("Request body:", { token, RWASupply });
 
       const verifyResponse = await fetch(
@@ -117,7 +128,9 @@ const TokenPopup = ({
       console.log("Verify response status:", verifyResponse.status);
       if (!verifyResponse.ok) {
         const text = await verifyResponse.text();
-        throw new Error(`Verification failed! status: ${verifyResponse.status}, message: ${text}`);
+        throw new Error(
+          `Verification failed! status: ${verifyResponse.status}, message: ${text}`
+        );
       }
 
       const verifyData = await verifyResponse.json();
@@ -129,17 +142,19 @@ const TokenPopup = ({
       } else {
         throw new Error("Verification failed: message is not true");
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Error:", err);
-      if (isConnected) {
-        // Langkah 1 berhasil, tetapi langkah 3 gagal
-        setSuccessMessage("Success to Connect and Verify Failed");
-        setIsVerified(false);
-      } else {
-        // Langkah 1 gagal
-        setError(`Failed to connect to bank: ${err.message}`);
-        setIsConnected(false);
-        setIsVerified(false);
+      if (err instanceof Error) {
+        if (isConnected) {
+          // Langkah 1 berhasil, tetapi langkah 3 gagal
+          setSuccessMessage("Success to Connect and Verify Failed");
+          setIsVerified(false);
+        } else {
+          // Langkah 1 gagal
+          setError(`Failed to connect to bank: ${err.message}`);
+          setIsConnected(false);
+          setIsVerified(false);
+        }
       }
     } finally {
       setIsLoading(false);
@@ -181,14 +196,14 @@ const TokenPopup = ({
         <button onClick={onClose} className="absolute right-4 top-4 text-xl">
           <IoClose className="text-black" />
         </button>
-        <h2 className="text-[1.2vw] font-bold mb-4 text-black">
-          {type} Token
-        </h2>
+        <h2 className="text-[1.2vw] font-bold mb-4 text-black">{type} Token</h2>
 
         {type === "Reserve" && (
           <div className="mb-6">
             {isConnected ? (
-              <p className={`text-[0.972vw] font-semibold ${isVerified ? "text-green-600" : "text-red-500"}`}>
+              <p
+                className={`text-[0.972vw] font-semibold ${isVerified ? "text-green-600" : "text-red-500"}`}
+              >
                 {successMessage}
               </p>
             ) : (
@@ -253,7 +268,7 @@ const TokenPopup = ({
           <input
             type="number"
             placeholder={`Enter amount to ${type.toLowerCase()}`}
-            value={amount}
+            value={amountReserve?.toString()}
             onChange={(e) => setAmount(e.target.value)}
             className="w-full text-[0.972vw] text-[#717680] border px-3 py-2 rounded bg-white"
             disabled={isLoading}

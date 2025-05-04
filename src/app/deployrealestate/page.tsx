@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import Dropdown from "@/components/Dropdown";
+import { ethers } from "ethers";
 
 const teams = [
   { label: "Your Team", icon: "/icons/team.png" },
@@ -29,7 +30,6 @@ export default function DeployPage() {
     }
   };
 
-
   const loadUserTokens = async (
     userAddress: string,
     provider: ethers.BrowserProvider
@@ -47,173 +47,178 @@ export default function DeployPage() {
     }
   };
 
-  const uploadImages = async (files: File[]): Promise<string[]> => {
-    const imageUrls: string[] = [];
-    for (const file of files) {
-      const fileName = `${Date.now()}-${file.name.replace(/\s/g, "_")}`;
-      try {
-        console.log(`Uploading image: ${fileName} to bucket 'images'`);
-        const { error } = await supabase.storage
-          .from("images")
-          .upload(fileName, file, {
-            cacheControl: "3600",
-            upsert: false,
-          });
-        if (error) {
-          console.error(`Failed to upload ${fileName}:`, error);
-          throw new Error(
-            `Failed to upload image ${fileName}: ${error.message}`
-          );
-        }
-        const { data: urlData } = supabase.storage
-          .from("images")
-          .getPublicUrl(fileName);
-        if (!urlData.publicUrl) {
-          throw new Error(`Failed to retrieve public URL for ${fileName}`);
-        }
-        console.log(`Public URL for ${fileName}:`, urlData.publicUrl);
-        imageUrls.push(urlData.publicUrl);
-      } catch (error: any) {
-        console.error(`Error processing ${fileName}:`, error);
-        throw error;
-      }
-    }
-    return imageUrls;
-  };
+  // const uploadImages = async (files: File[]): Promise<string[]> => {
+  //   const imageUrls: string[] = [];
+  //   for (const file of files) {
+  //     const fileName = `${Date.now()}-${file.name.replace(/\s/g, "_")}`;
+  //     try {
+  //       console.log(`Uploading image: ${fileName} to bucket 'images'`);
+  //       const { error } = await supabase.storage
+  //         .from("images")
+  //         .upload(fileName, file, {
+  //           cacheControl: "3600",
+  //           upsert: false,
+  //         });
+  //       if (error) {
+  //         console.error(`Failed to upload ${fileName}:`, error);
+  //         throw new Error(
+  //           `Failed to upload image ${fileName}: ${error.message}`
+  //         );
+  //       }
+  //       const { data: urlData } = supabase.storage
+  //         .from("images")
+  //         .getPublicUrl(fileName);
+  //       if (!urlData.publicUrl) {
+  //         throw new Error(`Failed to retrieve public URL for ${fileName}`);
+  //       }
+  //       console.log(`Public URL for ${fileName}:`, urlData.publicUrl);
+  //       imageUrls.push(urlData.publicUrl);
+  //     } catch (error: string) {
+  //       console.error(`Error processing ${fileName}:`, error);
+  //       throw error;
+  //     }
+  //   }
+  //   return imageUrls;
+  // };
 
-  const createTokenAndInsert = async () => {
-    try {
-      if (!walletClient || !account || !tokenName || !tokenSymbol) {
-        alert("Please connect your wallet and fill in all required fields!");
-        return;
-      }
+  // const createTokenAndInsert = async () => {
+  //   try {
+  //     if (!walletClient || !account || !tokenName || !tokenSymbol) {
+  //       alert("Please connect your wallet and fill in all required fields!");
+  //       return;
+  //     }
 
-      setIsLoading(true);
+  //     setIsLoading(true);
 
-      // Upload images to Supabase Storage
-      let imageUrls: string[] = [];
-      if (selectedImages.length > 0) {
-        console.log(
-          "Selected images:",
-          selectedImages.map((f) => f.name)
-        );
-        imageUrls = await uploadImages(selectedImages);
-        console.log("Uploaded image URLs:", imageUrls);
-      }
+  //     // Upload images to Supabase Storage
+  //     let imageUrls: string[] = [];
+  //     if (selectedImages.length > 0) {
+  //       console.log(
+  //         "Selected images:",
+  //         selectedImages.map((f) => f.name)
+  //       );
+  //       imageUrls = await uploadImages(selectedImages);
+  //       console.log("Uploaded image URLs:", imageUrls);
+  //     }
 
-      // Inisiasi provider dan kontrak
-      const provider = new ethers.BrowserProvider(walletClient);
-      const signer = await provider.getSigner();
-      const factory = new ethers.Contract(
-        factoryAddress,
-        TokenFactoryABI,
-        signer
-      );
+  //     // Inisiasi provider dan kontrak
+  //     const provider = new ethers.BrowserProvider(walletClient);
+  //     const signer = await provider.getSigner();
+  //     const factory = new ethers.Contract(
+  //       factoryAddress,
+  //       TokenFactoryABI,
+  //       signer
+  //     );
 
-      // Cek token sebelum pembuatan
-      console.log("Checking tokens before creation...");
-      const tokensBefore = await factory.getTokensByUser(account);
-      console.log("Tokens before:", tokensBefore);
+  //     // Cek token sebelum pembuatan
+  //     console.log("Checking tokens before creation...");
+  //     const tokensBefore = await factory.getTokensByUser(account);
+  //     console.log("Tokens before:", tokensBefore);
 
-      // Create token on blockchain
-      console.log("Creating token with:", {
-        tokenName,
-        tokenSymbol,
-        owner: account,
-      });
-      const tx = await factory.createToken(tokenName, tokenSymbol, account, {
-        gasLimit: 5000000,
-      });
-      console.log("Transaction hash:", tx.hash);
-      const receipt = await tx.wait();
-      console.log("Transaction receipt:", receipt);
+  //     // Create token on blockchain
+  //     console.log("Creating token with:", {
+  //       tokenName,
+  //       tokenSymbol,
+  //       owner: account,
+  //     });
+  //     const tx = await factory.createToken(tokenName, tokenSymbol, account, {
+  //       gasLimit: 5000000,
+  //     });
+  //     console.log("Transaction hash:", tx.hash);
+  //     const receipt = await tx.wait();
+  //     console.log("Transaction receipt:", receipt);
 
-      // Coba ambil tokenAddress dari event
-      let tokenAddress: string | undefined;
-      const parsedLogs = receipt.logs
-        .map((log: ethers.Log, index: number) => {
-          try {
-            const parsed = factory.interface.parseLog(log) as ethers.LogDescription | null;
-            console.log(`Parsed log ${index}:`, parsed);
-            return parsed;
-          } catch (error) {
-            console.error(`Failed to parse log ${index}:`, error);
-            return null;
-          }
-        })
-        .filter((parsed: ethers.LogDescription | null) => parsed && parsed.name === "TokenCreated");
+  //     // Coba ambil tokenAddress dari event
+  //     let tokenAddress: string | undefined;
+  //     const parsedLogs = receipt.logs
+  //       .map((log: ethers.Log, index: number) => {
+  //         try {
+  //           const parsed = factory.interface.parseLog(
+  //             log
+  //           ) as ethers.LogDescription | null;
+  //           console.log(`Parsed log ${index}:`, parsed);
+  //           return parsed;
+  //         } catch (error) {
+  //           console.error(`Failed to parse log ${index}:`, error);
+  //           return null;
+  //         }
+  //       })
+  //       .filter(
+  //         (parsed: ethers.LogDescription | null) =>
+  //           parsed && parsed.name === "TokenCreated"
+  //       );
 
-      if (parsedLogs.length > 0) {
-        tokenAddress = parsedLogs[0]?.args.tokenAddress;
-        console.log("Token address from event:", tokenAddress);
-      }
+  //     if (parsedLogs.length > 0) {
+  //       tokenAddress = parsedLogs[0]?.args.tokenAddress;
+  //       console.log("Token address from event:", tokenAddress);
+  //     }
 
-      // Jika event tidak ditemukan, coba fallback ke getTokensByUser
-      if (!tokenAddress) {
-        console.log("No TokenCreated event found, trying getTokensByUser...");
-        const tokensAfter = await factory.getTokensByUser(account);
-        console.log("Tokens after:", tokensAfter);
+  //     // Jika event tidak ditemukan, coba fallback ke getTokensByUser
+  //     if (!tokenAddress) {
+  //       console.log("No TokenCreated event found, trying getTokensByUser...");
+  //       const tokensAfter = await factory.getTokensByUser(account);
+  //       console.log("Tokens after:", tokensAfter);
 
-        // Cari token baru yang tidak ada di tokensBefore
-        const newToken = tokensAfter.find(
-          (token: string) => !tokensBefore.includes(token)
-        );
-        if (newToken) {
-          tokenAddress = newToken;
-          console.log("Token address from getTokensByUser:", tokenAddress);
-        }
-      }
+  //       // Cari token baru yang tidak ada di tokensBefore
+  //       const newToken = tokensAfter.find(
+  //         (token: string) => !tokensBefore.includes(token)
+  //       );
+  //       if (newToken) {
+  //         tokenAddress = newToken;
+  //         console.log("Token address from getTokensByUser:", tokenAddress);
+  //       }
+  //     }
 
-      // Validasi tokenAddress
-      if (!tokenAddress || !ethers.isAddress(tokenAddress)) {
-        throw new Error("Failed to retrieve valid token address");
-      }
+  //     // Validasi tokenAddress
+  //     if (!tokenAddress || !ethers.isAddress(tokenAddress)) {
+  //       throw new Error("Failed to retrieve valid token address");
+  //     }
 
-      // Prepare data for Supabase
-      const realEstateData = {
-        address: tokenAddress,
-        owner: account,
-        name: tokenName,
-        description,
-        location,
-        image: imageUrls,
-      };
-      console.log(
-        "Data to be sent to Supabase real_estate table:",
-        realEstateData
-      );
+  //     // Prepare data for Supabase
+  //     const realEstateData = {
+  //       address: tokenAddress,
+  //       owner: account,
+  //       name: tokenName,
+  //       description,
+  //       location,
+  //       image: imageUrls,
+  //     };
+  //     console.log(
+  //       "Data to be sent to Supabase real_estate table:",
+  //       realEstateData
+  //     );
 
-      // Insert into Supabase real_estate table
-      const { error } = await supabase
-        .from("real_estate")
-        .insert([realEstateData]);
+  //     // Insert into Supabase real_estate table
+  //     const { error } = await supabase
+  //       .from("real_estate")
+  //       .insert([realEstateData]);
 
-      if (error) {
-        console.error("Error inserting into real_estate:", error);
-        throw new Error(`Failed to save real estate data: ${error.message}`);
-      }
+  //     if (error) {
+  //       console.error("Error inserting into real_estate:", error);
+  //       throw new Error(`Failed to save real estate data: ${error.message}`);
+  //     }
 
-      // Reload user tokens
-      await loadUserTokens(account, provider);
+  //     // Reload user tokens
+  //     await loadUserTokens(account, provider);
 
-      // Reset form
-      setTokenName("");
-      setTokenSymbol("");
-      setDescription("");
-      setLocation("");
-      setSelectedImages([]);
-      alert("Token created and real estate data saved successfully!");
-    } catch (error: any) {
-      console.error("Error during createTokenAndInsert:", error);
-      alert(
-        `Failed to complete operation: ${
-          error.reason || error.message || "Unknown error"
-        }`
-      );
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  //     // Reset form
+  //     setTokenName("");
+  //     setTokenSymbol("");
+  //     setDescription("");
+  //     setLocation("");
+  //     setSelectedImages([]);
+  //     alert("Token created and real estate data saved successfully!");
+  //   } catch (error: string) {
+  //     console.error("Error during createTokenAndInsert:", error);
+  //     alert(
+  //       `Failed to complete operation: ${
+  //         error.reason || error.message || "Unknown error"
+  //       }`
+  //     );
+  //   } finally {
+  //     setIsLoading(false);
+  //   }
+  // };
 
   useEffect(() => {
     if (account && walletClient) {
@@ -391,7 +396,7 @@ export default function DeployPage() {
                 className="w-[68.4vw] h-[4.93vw] border border-[#D5D7DA] rounded-md px-[1vw] py-[1vw] text-[0.83vw] text-[#717680] placeholder-[#717680] resize-none"
               />
               <p className="text-[1.11vw] text-[#535862] font-medium mt-[0.5vw]">
-                Input should be passed in JSON format - Ex. ["0x...."]
+                Input should be passed in JSON format - Ex. [&quot;0x....&quot;]
               </p>
             </div>
           </div>
