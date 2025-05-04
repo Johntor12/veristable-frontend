@@ -30,17 +30,17 @@ interface Log {
 }
 
 // Interface untuk parsed logs
-interface ParsedLog {
-  name: string;
-  args: Record<string, unknown>;
-  eventFragment: {
-    name: string;
-    inputs: Array<{
-      name: string;
-      type: string;
-    }>;
-  };
-}
+// interface ParsedLog {
+//   name: string;
+//   args: Record<string, unknown>;
+//   eventFragment: {
+//     name: string;
+//     inputs: Array<{
+//       name: string;
+//       type: string;
+//     }>;
+//   };
+// }
 
 const teams = [
   { label: "Veri Team", icon: "/icons/team.png" },
@@ -83,6 +83,7 @@ export default function DeployPage() {
       );
       const tokens = await factory.getTokensByUser(userAddress);
       setUserTokens(tokens);
+      return userTokens;
     } catch (error) {
       console.error("Error loading user tokens:", error);
     }
