@@ -12,18 +12,16 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-// ABI dan Alamat Kontrak
-const TokenFactoryABI = [
-  "function createToken(string name, string symbol, address tokenOwner) public returns (address)",
-  "function getTokensByUser(address user) public view returns (address[])",
-  "function addToAVSTokens(address token) public",
-  "function removeFromAVSTokens(address token) public",
-  "function getUserTokenCount(address user) public view returns (uint256)",
-  "event TokenCreated(address indexed tokenAddress, string name, string symbol, address indexed owner)",
-] as const;
-
 // Alamat Kontrak di Pharos Network
 const factoryAddress = "0x9C34c7d588C2db8f5f4626C5e8C6E51cffFDF9e1";
+
+// Tipe untuk event logs
+type Log = {
+  name: string;
+  args: {
+    tokenAddress?: string;
+  };
+};
 
 const teams = [
   { label: "Veri Team", icon: "/icons/team.png" },
@@ -131,14 +129,17 @@ export default function DeployPage() {
       let tokenAddress: string | undefined;
 
       const parsedLogs = receipt.logs
-        .map((log) => {
+        .map((log: any): Log | null => {
           try {
-            return factory.interface.parseLog(log);
+            return factory.interface.parseLog(log) as Log;
           } catch {
             return null;
           }
         })
-        .filter((log) => log && log.name === "TokenCreated");
+        .filter(
+          (log: Log | null): log is Log =>
+            log !== null && log.name === "TokenCreated"
+        );
 
       if (parsedLogs.length > 0) {
         tokenAddress = parsedLogs[0]?.args.tokenAddress;
@@ -165,7 +166,7 @@ export default function DeployPage() {
 
       const { error } = await supabase
         .from("real_estate")
-        .insert([realEstateData]);
+        .insert([realEstateData as Record<string, unknown>]);
       if (error) throw error;
 
       // Reset form
