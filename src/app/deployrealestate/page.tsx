@@ -15,13 +15,32 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 // Alamat Kontrak di Pharos Network
 const factoryAddress = "0x9C34c7d588C2db8f5f4626C5e8C6E51cffFDF9e1";
 
-// Tipe untuk event logs
-type Log = {
+// Interface untuk TokenFactory
+const TokenFactoryABI = [
+  "function createToken(string memory name, string memory symbol, address owner) external returns (address)",
+  "function getTokensByUser(address user) external view returns (address[])",
+];
+
+// Interface untuk event logs
+interface Log {
   name: string;
   args: {
     tokenAddress?: string;
   };
-};
+}
+
+// Interface untuk parsed logs
+interface ParsedLog {
+  name: string;
+  args: Record<string, unknown>;
+  eventFragment: {
+    name: string;
+    inputs: Array<{
+      name: string;
+      type: string;
+    }>;
+  };
+}
 
 const teams = [
   { label: "Veri Team", icon: "/icons/team.png" },
@@ -129,7 +148,7 @@ export default function DeployPage() {
       let tokenAddress: string | undefined;
 
       const parsedLogs = receipt.logs
-        .map((log: any): Log | null => {
+        .map((log: { topics: string[]; data: string }): Log | null => {
           try {
             return factory.interface.parseLog(log) as Log;
           } catch {
@@ -166,7 +185,7 @@ export default function DeployPage() {
 
       const { error } = await supabase
         .from("real_estate")
-        .insert([realEstateData as Record<string, unknown>]);
+        .insert([realEstateData]);
       if (error) throw error;
 
       // Reset form
