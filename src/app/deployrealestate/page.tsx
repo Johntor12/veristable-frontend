@@ -20,7 +20,7 @@ const TokenFactoryABI = [
   "function removeFromAVSTokens(address token) public",
   "function getUserTokenCount(address user) public view returns (uint256)",
   "event TokenCreated(address indexed tokenAddress, string name, string symbol, address indexed owner)",
-];
+] as const;
 
 // Alamat Kontrak di Pharos Network
 const factoryAddress = "0x9C34c7d588C2db8f5f4626C5e8C6E51cffFDF9e1";
@@ -87,7 +87,7 @@ export default function DeployPage() {
         if (!urlData?.publicUrl) throw new Error("No public URL");
 
         imageUrls.push(urlData.publicUrl);
-      } catch (error: any) {
+      } catch (error) {
         console.error(`Image processing error:`, error);
         throw error;
       }
@@ -175,8 +175,12 @@ export default function DeployPage() {
       setLocation("");
       setSelectedImages([]);
       alert("Token created and saved successfully!");
-    } catch (error: any) {
-      alert(`Error: ${error.reason || error.message || "Unknown error"}`);
+    } catch (error) {
+      if (error instanceof Error) {
+        alert(`Error: ${error.message || "Unknown error"}`);
+      } else {
+        alert("An unknown error occurred");
+      }
     } finally {
       setIsLoading(false);
     }
