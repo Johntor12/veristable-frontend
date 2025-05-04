@@ -24,15 +24,6 @@ if (!supabaseUrl || !supabaseAnonKey) {
 }
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-// ABI dan Alamat Kontrak
-const TokenFactoryABI = [
-  "function createToken(string name, string symbol, address tokenOwner) public returns (address)",
-  "function getTokensByUser(address user) public view returns (address[])",
-  "function addToAVSTokens(address token) public",
-  "function removeFromAVSTokens(address token) public",
-  "function getUserTokenCount(address user) public view returns (uint256)",
-];
-
 const TokenABI = [
   "function mint(address to, uint256 amount) public",
   "function burn(uint256 amount) public",
@@ -49,25 +40,8 @@ const ReserveABI = [
   "function getLastUpdateTimestamp() external view returns (uint256)",
 ];
 
-const VeristableAVSABI = [
-  "function underwrite(address token, uint128 amount) external",
-  "function withdraw(address token, uint128 amount) external",
-  "function claimRewards(address token) external",
-  "function depositRewards(address token, uint128 amount) public",
-  "function pause() public",
-  "function unpause() public",
-  "function transferOwnership(address newOwner) public",
-  "function paused() public view returns (bool)",
-  "function owner() public view returns (address)",
-  "function underwritingAmounts(address token, address underwriter) public view returns (uint128)",
-  "function totalUnderwriting(address token) public view returns (uint128)",
-  "function totalRewards(address token) public view returns (uint128)",
-  "function unclaimedRewards(address token, address underwriter) public view returns (uint128)",
-];
-
 // Alamat Kontrak di Pharos Network
 const reserveAddress = "0xb080914D90A76EC677a9d288e9BF03B9a052769d";
-const veristableAVSAddress = "0x9Ec9eb3E56B0B66948dB51ce98A56cA7a5b49Ad7";
 
 type TokenAction = {
   label: React.ReactNode;
