@@ -2,42 +2,8 @@
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Dropdown from "@/components/Dropdown";
-import { useAccount, useWalletClient } from "wagmi";
-import { ethers } from "ethers";
-import { createClient } from "@supabase/supabase-js";
-
-// Supabase Client Setup
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
-const supabase = createClient(supabaseUrl, supabaseKey);
-
-// ABI dan Alamat Kontrak
-const TokenFactoryABI = [
-  "function createToken(string name, string symbol, address tokenOwner) public returns (address)",
-  "function getTokensByUser(address user) public view returns (address[])",
-  "function addToAVSTokens(address token) public",
-  "function removeFromAVSTokens(address token) public",
-  "function getUserTokenCount(address user) public view returns (uint256)",
-  // Asumsi event (sesuaikan jika nama berbeda)
-  "event TokenCreated(address indexed tokenAddress, string name, string symbol, address indexed owner)",
-];
-
-const TokenABI = [
-  "function mint(address to, uint256 amount) public",
-  "function burn(uint256 amount) public",
-  "function balanceOf(address account) public view returns (uint256)",
-  "function symbol() public view returns (string)",
-  "function approve(address spender, uint256 amount) public returns (bool)",
-  "function transferOwnership(address newOwner) public",
-  "function owner() public view returns (address)",
-];
-
-// Alamat Kontrak di Pharos Network (NEW)
-const factoryAddress = "0x9C34c7d588C2db8f5f4626C5e8C6E51cffFDF9e1";
-const reserveAddress = "0x32e26c6880e652599A20CF8eb672FDd9179114FC";
-const veristableAVSAddress = "0x9Ec9eb3E56B0B66948dB51ce98A56cA7a5b49Ad7";
 
 const teams = [
   { label: "Your Team", icon: "/icons/team.png" },
@@ -54,22 +20,15 @@ const chains = [
 ];
 
 export default function DeployPage() {
-  const [tokenName, setTokenName] = useState("");
-  const [tokenSymbol, setTokenSymbol] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [userTokens, setUserTokens] = useState<string[]>([]);
-  const [selectedImages, setSelectedImages] = useState<File[]>([]);
-  const [description, setDescription] = useState("");
-  const [location, setLocation] = useState("");
   const router = useRouter();
-  const { address: account } = useAccount();
-  const { data: walletClient } = useWalletClient();
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      setSelectedImages(Array.from(e.target.files));
+    if (e.target.files && e.target.files[0]) {
+      setSelectedImage(e.target.files[0]);
     }
   };
+
 
   const loadUserTokens = async (
     userAddress: string,
@@ -304,23 +263,18 @@ export default function DeployPage() {
             <div className="w-[68.4vw] h-[1px] bg-[#F5F5F5] mb-[2vw]" />
 
             <div className="flex gap-[2vw]">
-              {/* Upload Images */}
+              {/* Upload Image */}
               <div className="flex flex-col">
                 <label className="text-[#000000] font-medium text-[1.11vw] mb-[0.7vw]">
-                  Images
+                  Image
                 </label>
                 <label className="w-[15vw] h-[14.79vw] border border-[#D5D7DA] rounded-lg flex flex-col justify-center items-center cursor-pointer">
-                  {selectedImages.length > 0 ? (
-                    <div className="w-full h-full overflow-auto">
-                      {selectedImages.map((img, index) => (
-                        <img
-                          key={index}
-                          src={URL.createObjectURL(img)}
-                          alt={`Selected ${index}`}
-                          className="w-full h-auto object-cover rounded-lg mb-1"
-                        />
-                      ))}
-                    </div>
+                  {selectedImage ? (
+                    <img
+                      src={URL.createObjectURL(selectedImage)}
+                      alt="Selected"
+                      className="w-full h-full object-cover rounded-lg"
+                    />
                   ) : (
                     <>
                       <Image
@@ -330,21 +284,20 @@ export default function DeployPage() {
                         height={30}
                       />
                       <p className="text-[#717680] text-[0.83vw] font-normal mt-[0.5vw]">
-                        Upload Files
+                        Upload File
                       </p>
                     </>
                   )}
                   <input
                     type="file"
                     accept="image/png, image/jpeg"
-                    multiple
                     onChange={handleFileChange}
                     className="hidden"
                   />
                 </label>
               </div>
 
-              {/* Form Fields */}
+              {/* Name, Symbol, Description */}
               <div className="flex-1 flex flex-col gap-[2vw]">
                 <div className="flex gap-[2vw]">
                   {/* Name */}
@@ -354,11 +307,8 @@ export default function DeployPage() {
                     </label>
                     <input
                       type="text"
-                      placeholder="Token Name"
+                      placeholder="Type here"
                       className="w-[31.32vw] h-[2.64vw] border border-[#D5D7DA] rounded-md px-[1vw] text-[0.83vw] text-[#717680] placeholder-[#717680]"
-                      value={tokenName}
-                      onChange={(e) => setTokenName(e.target.value)}
-                      disabled={isLoading}
                     />
                   </div>
 
@@ -369,43 +319,21 @@ export default function DeployPage() {
                     </label>
                     <input
                       type="text"
-                      placeholder="Token Symbol"
+                      placeholder="Type here"
                       className="w-[12vw] h-[2.64vw] border border-[#D5D7DA] rounded-md px-[1vw] text-[0.83vw] text-[#717680] placeholder-[#717680]"
-                      value={tokenSymbol}
-                      onChange={(e) => setTokenSymbol(e.target.value)}
-                      disabled={isLoading}
                     />
                   </div>
                 </div>
 
-                <div className="flex gap-[2vw]">
-                  {/* Description */}
-                  <div className="flex flex-col">
-                    <label className="text-[#000000] font-medium text-[1.11vw] mb-[0.7vw]">
-                      Description
-                    </label>
-                    <textarea
-                      placeholder="Property Description"
-                      className="w-[20.55vw] h-[8.75vw] border border-[#D5D7DA] rounded-md px-[1vw] py-[1vw] text-[0.83vw] text-[#717680] placeholder-[#717680] resize-none"
-                      value={description}
-                      onChange={(e) => setDescription(e.target.value)}
-                      disabled={isLoading}
-                    />
-                  </div>
-
-                  {/* Location */}
-                  <div className="flex flex-col">
-                    <label className="text-[#000000] font-medium text-[1.11vw] mb-[0.7vw]">
-                      Location
-                    </label>
-                    <textarea
-                      placeholder="Property Location"
-                      className="w-[20.55vw] h-[8.75vw] border border-[#D5D7DA] rounded-md px-[1vw] py-[1vw] text-[0.83vw] text-[#717680] placeholder-[#717680] resize-none"
-                      value={location}
-                      onChange={(e) => setLocation(e.target.value)}
-                      disabled={isLoading}
-                    />
-                  </div>
+                {/* Description */}
+                <div className="flex flex-col">
+                  <label className="text-[#000000] font-medium text-[1.11vw] mb-[0.7vw]">
+                    Description
+                  </label>
+                  <textarea
+                    placeholder="Type here"
+                    className="w-[51.6vw] h-[8.75vw] border border-[#D5D7DA] rounded-md px-[1vw] py-[1vw] text-[0.83vw] text-[#717680] placeholder-[#717680] resize-none"
+                  />
                 </div>
               </div>
             </div>
@@ -426,9 +354,8 @@ export default function DeployPage() {
                 type="text"
                 placeholder="Type here"
                 className="w-[68.4vw] h-[2.64vw] border border-[#D5D7DA] rounded-md px-[1vw] text-[0.83vw] text-[#717680] placeholder-[#717680]"
-                disabled={isLoading}
               />
-              <p className="text-[1.11vw] text-[#535862] font-medium mt-[1vw]">
+              <p className="text-[1.11vw] text-[#535862] font-medium mt-[0.5vw]">
                 The wallet address that should receive the revenue from initial
                 sales of the assets.
               </p>
@@ -462,10 +389,9 @@ export default function DeployPage() {
               <textarea
                 placeholder="[ ]"
                 className="w-[68.4vw] h-[4.93vw] border border-[#D5D7DA] rounded-md px-[1vw] py-[1vw] text-[0.83vw] text-[#717680] placeholder-[#717680] resize-none"
-                disabled={isLoading}
               />
               <p className="text-[1.11vw] text-[#535862] font-medium mt-[0.5vw]">
-                Input should be passed in JSON format - Ex. [0x....]
+                Input should be passed in JSON format - Ex. ["0x...."]
               </p>
             </div>
           </div>
@@ -512,7 +438,7 @@ export default function DeployPage() {
           {/* Card 6: Chain */}
           <div className="w-[73.05vw] border border-[#D5D7DA] rounded-lg p-[2vw] mt-[2vw]">
             <h3 className="text-[1.25vw] text-[#000000] font-bold mb-[1vw]">
-              Chain
+              Primary Sales
             </h3>
             <div className="w-[68.4vw] h-[1px] bg-[#F5F5F5] mb-[1.5vw]" />
             <div className="flex flex-col gap-[0.7vw]">
@@ -530,14 +456,6 @@ export default function DeployPage() {
               />
             </div>
           </div>
-
-          <button
-            onClick={createTokenAndInsert}
-            className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 w-full disabled:bg-green-300 mt-[2vw]"
-            disabled={isLoading}
-          >
-            {isLoading ? "Processing..." : "Create Token and Save"}
-          </button>
         </div>
       </div>
     </div>
