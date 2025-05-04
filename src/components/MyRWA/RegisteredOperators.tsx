@@ -91,24 +91,30 @@ const RegisteredOperators = () => {
           </button>
         </div>
       </div>
-      <div className="flex flex-col gap-[0.333vw]">
+      <div className="flex flex-col gap-[0.833vw] bg-[#FAFAFA] p-[1.883vw]">
+        <p className="font-jakarta text-[1.25vw] leading-[1.875vw] text-black font-bold border-b-2 border-[#D5D7DA]">
+          Token List Details
+        </p>
         <div className="flex flex-row justify-between items-center w-full bg-transparent border-b-1 border-[#D5D7DA] text-center pb-[0.667vw]">
-          <p className="font-jakarta text-[0.833vw] text-black leading-[1.25vw] w-[20%]">
+          <p className="font-jakarta text-[0.833vw] text-[#717680] leading-[1.25vw] w-[15%]">
             TOKEN NAME
           </p>
-          <p className="font-jakarta text-[0.833vw] text-black leading-[1.25vw] w-[30%]">
+          <p className="font-jakarta text-[0.833vw] text-[#717680] leading-[1.25vw] w-[15%]">
+            STATUS
+          </p>
+          <p className="font-jakarta text-[0.833vw] text-[#717680] leading-[1.25vw] w-[20%]">
             TOKEN ADDRESS
           </p>
-          <p className="font-jakarta text-[0.833vw] text-black leading-[1.25vw] w-[15%]">
+          <p className="font-jakarta text-[0.833vw] text-[#717680] leading-[1.25vw] w-[15%]">
             TOKEN SUPPLY
           </p>
-          <p className="font-jakarta text-[0.833vw] text-black leading-[1.25vw] W-[15%]">
+          <p className="font-jakarta text-[0.833vw] text-[#717680] leading-[1.25vw] w-[15%]">
             RESERVE
           </p>
-          <p className="font-jakarta text-[0.833vw] text-black leading-[1.25vw] w-[15%]">
+          <p className="font-jakarta text-[0.833vw] text-[#717680] leading-[1.25vw] w-[15%]">
             RESTAKE
           </p>
-          <p className="font-jakarta text-[0.833vw] text-black leading-[1.25vw] w-[15%]">
+          <p className="font-jakarta text-[0.833vw] text-[#717680] leading-[1.25vw] w-[15%]">
             ACTIONS
           </p>
         </div>
@@ -123,10 +129,17 @@ const RegisteredOperators = () => {
                 key={token.id}
                 className="flex flex-row justify-between items-center w-full border-b border-[#D5D7DA] pb-[0.333vw]"
               >
-                <span className="font-jakarta text-center font-medium text-[0.972vw] text-black w-[20%]">
+                <span className="font-jakarta text-center font-medium text-[0.972vw] text-black w-[15%]">
                   {token.name}
                 </span>
-                <span className="font-jakarta text-center font-medium text-[0.972vw] text-black w-[30%]">
+                <span
+                  className={`font-jakarta text-center font-medium text-[0.972vw] w-[15%] text-white px-[0.5vw] py-[0.2vw] rounded-[0.2vw] ${Number(token.reserve) >= Number(token.totalSupply) ? "bg-green-500" : "bg-red-500"}`}
+                >
+                  {Number(token.reserve) >= Number(token.totalSupply)
+                    ? "VERIFIED"
+                    : "UNVERIFIED"}
+                </span>
+                <span className="font-jakarta text-center font-medium text-[0.972vw] text-black w-[20%]">
                   {token.address.slice(0, 6)}...{token.address.slice(-4)}
                 </span>
                 <span className="font-jakarta text-center font-medium text-[0.972vw] text-black w-[15%]">

@@ -502,6 +502,19 @@ const TokenActionPopup = ({
                 Token Information
               </h3>
               <div className="grid grid-cols-2 gap-4 bg-gray-50 p-4 rounded-lg border border-gray-200">
+                <div className="col-span-2">
+                  <label className="block text-[0.833vw] text-gray-600 mb-1">
+                    Status
+                  </label>
+                  <p
+                    className={`font-jakarta text-[0.972vw] ${parseFloat(tokenInfo.reserve) >= parseFloat(tokenInfo.totalSupply) ? "text-green-500" : "text-red-500"}`}
+                  >
+                    {parseFloat(tokenInfo.reserve) >=
+                    parseFloat(tokenInfo.totalSupply)
+                      ? "VERIFIED"
+                      : "UNVERIFIED"}
+                  </p>
+                </div>
                 <div>
                   <label className="block text-[0.833vw] text-gray-600 mb-1">
                     Token Name
