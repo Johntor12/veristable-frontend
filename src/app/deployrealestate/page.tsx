@@ -167,7 +167,9 @@ export default function DeployPage() {
 
       if (!tokenAddress) {
         const tokensAfter = await factory.getTokensByUser(account);
-        tokenAddress = tokensAfter.find((t) => !tokensBefore.includes(t));
+        tokenAddress = tokensAfter.find(
+          (t: string) => !tokensBefore.includes(t)
+        );
       }
 
       if (!tokenAddress || !ethers.isAddress(tokenAddress)) {
