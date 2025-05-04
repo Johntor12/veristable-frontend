@@ -3,6 +3,19 @@
 import { IoClose } from "react-icons/io5";
 import { useState, useEffect } from "react";
 import { ethers } from "ethers";
+import { createClient } from "@supabase/supabase-js";
+
+// Supabase Configuration
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
+
+// Validate Supabase configuration
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.error(
+    "Supabase configuration missing. Please set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in .env.local"
+  );
+}
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 // Smart Contract ABI
 const TokenABI = [
@@ -84,6 +97,91 @@ const TokenActionPopup = ({
   const [activeTab, setActiveTab] = useState<"stake" | "unstake" | "rewards">(
     "stake"
   );
+
+  // Fungsi untuk menyimpan data ke Supabase
+  const saveToSupabase = async (
+    onchainTotalSupply: number,
+    onchainReserveBalance: number,
+    onchainRestake: number
+  ) => {
+    if (!ethers.isAddress(token.address)) {
+      console.error("Invalid contract address for Supabase:", token.address);
+      setErrorMessage("Invalid contract address for saving to Supabase");
+      return;
+    }
+
+    if (!ethers.isAddress(account || "")) {
+      console.error("Invalid owner address for Supabase:", account);
+      setErrorMessage("Invalid owner address for saving to Supabase");
+      return;
+    }
+
+    const realEstateData = {
+      address: token.address,
+      owner: account,
+      reserve: Math.floor(onchainReserveBalance),
+      totalSupply: Math.floor(onchainTotalSupply),
+      restake: onchainRestake,
+    };
+
+    try {
+      console.log(
+        "Attempting to save to Supabase real_estate table:",
+        realEstateData
+      );
+
+      // Check if row exists
+      const { data: existingData, error: selectError } = await supabase
+        .from("real_estate")
+        .select("address")
+        .eq("address", token.address)
+        .single();
+
+      console.log("Supabase select response:", { existingData, selectError });
+
+      if (selectError && selectError.code !== "PGRST116") {
+        console.error("Supabase select error:", selectError);
+        throw new Error(
+          `Failed to check existing data: ${selectError.message || JSON.stringify(selectError)}`
+        );
+      }
+
+      let data, error;
+      if (existingData) {
+        // Update existing row
+        ({ data, error } = await supabase
+          .from("real_estate")
+          .update({
+            owner: account,
+            reserve: Math.floor(onchainReserveBalance),
+            totalSupply: Math.floor(onchainTotalSupply),
+            restake: onchainRestake,
+          })
+          .eq("address", token.address));
+      } else {
+        // Insert new row
+        ({ data, error } = await supabase
+          .from("real_estate")
+          .insert([realEstateData]));
+      }
+
+      console.log("Supabase operation response:", { data, error });
+
+      if (error) {
+        console.error("Supabase operation error:", error);
+        throw new Error(
+          `Failed to save to Supabase: ${error.message || JSON.stringify(error)}`
+        );
+      }
+
+      console.log("Successfully saved to Supabase real_estate table:", data);
+    } catch (err: any) {
+      console.error("Error saving to Supabase:", err);
+      setErrorMessage(
+        `Failed to save to Supabase: ${err.message || "Unknown error"}`
+      );
+    }
+  };
 
   useEffect(() => {
     const fetchTokenInfo = async () => {
@@ -197,16 +295,45 @@ const TokenActionPopup = ({
         VeristableAVSABI,
         signer
       );
+      const tokenContract = new ethers.Contract(
+        token.address,
+        TokenABI,
+        provider
+      );
+      const reserveContract = new ethers.Contract(
+        reserveAddress,
+        ReserveABI,
+        provider
+      );
+
       const tx = await avs.stakeForToken(token.address, {
         value: ethers.parseEther(stakeAmount),
         gasLimit: 500000,
       });
       console.log("Stake TX:", tx);
       await tx.wait();
+
+      // Ambil data onchain terbaru
+      const totalSupplyRaw = await tokenContract.totalSupply();
+      const newTotalSupply = parseFloat(
+        ethers.formatUnits(totalSupplyRaw, tokenInfo?.decimals || 18)
+      );
+      const reserveBalanceRaw = await reserveContract.getReserveBalance(
+        token.address
+      );
+      const newReserveBalance = parseFloat(
+        ethers.formatUnits(reserveBalanceRaw, tokenInfo?.decimals || 18)
+      );
+      const totalStaked = await avs.totalTokenStakes(token.address);
+      const newRestake = parseFloat(ethers.formatUnits(totalStaked, 18));
+
+      // Simpan ke Supabase dengan data onchain
+      await saveToSupabase(newTotalSupply, newReserveBalance, newRestake);
+
       setStakeAmount("");
       alert("ETH successfully staked!");
       // Refresh token info
-      fetchTokenInfo();
+      await fetchTokenInfo();
     } catch (err: any) {
       console.error("Error staking ETH:", err);
       setErrorMessage(
@@ -251,6 +378,16 @@ const TokenActionPopup = ({
         VeristableAVSABI,
         signer
       );
+      const tokenContract = new ethers.Contract(
+        token.address,
+        TokenABI,
+        provider
+      );
+      const reserveContract = new ethers.Contract(
+        reserveAddress,
+        ReserveABI,
+        provider
+      );
 
       // Check if contract is paused
       const isPaused = await avs.paused();
@@ -267,10 +404,28 @@ const TokenActionPopup = ({
       });
       console.log("Unstake TX:", tx);
       await tx.wait();
+
+      // Ambil data onchain terbaru
+      const totalSupplyRaw = await tokenContract.totalSupply();
+      const newTotalSupply = parseFloat(
+        ethers.formatUnits(totalSupplyRaw, tokenInfo?.decimals || 18)
+      );
+      const reserveBalanceRaw = await reserveContract.getReserveBalance(
+        token.address
+      );
+      const newReserveBalance = parseFloat(
+        ethers.formatUnits(reserveBalanceRaw, tokenInfo?.decimals || 18)
+      );
+      const totalStaked = await avs.totalTokenStakes(token.address);
+      const newRestake = parseFloat(ethers.formatUnits(totalStaked, 18));
+
+      // Simpan ke Supabase dengan data onchain
+      await saveToSupabase(newTotalSupply, newReserveBalance, newRestake);
+
       setUnstakeAmount("");
       alert("ETH successfully unstaked!");
       // Refresh token info
-      fetchTokenInfo();
+      await fetchTokenInfo();
     } catch (err: any) {
       console.error("Error unstaking ETH:", err);
       setErrorMessage(
@@ -306,6 +461,16 @@ const TokenActionPopup = ({
         VeristableAVSABI,
         signer
       );
+      const tokenContract = new ethers.Contract(
+        token.address,
+        TokenABI,
+        provider
+      );
+      const reserveContract = new ethers.Contract(
+        reserveAddress,
+        ReserveABI,
+        provider
+      );
 
       // Check if contract is paused
       const isPaused = await avs.paused();
@@ -324,10 +489,28 @@ const TokenActionPopup = ({
 
       // Execute claim
       const tx = await avs.claimTokenRewards(token.address, {
-        gasLimit: 600000, // Increased gas limit
+        gasLimit: 600000,
       });
       console.log("Claim TX:", tx);
       await tx.wait();
+
+      // Ambil data onchain terbaru
+      const totalSupplyRaw = await tokenContract.totalSupply();
+      const newTotalSupply = parseFloat(
+        ethers.formatUnits(totalSupplyRaw, tokenInfo?.decimals || 18)
+      );
+      const reserveBalanceRaw = await reserveContract.getReserveBalance(
+        token.address
+      );
+      const newReserveBalance = parseFloat(
+        ethers.formatUnits(reserveBalanceRaw, tokenInfo?.decimals || 18)
+      );
+      const totalStaked = await avs.totalTokenStakes(token.address);
+      const newRestake = parseFloat(ethers.formatUnits(totalStaked, 18));
+
+      // Simpan ke Supabase dengan data onchain
+      await saveToSupabase(newTotalSupply, newReserveBalance, newRestake);
+
       alert("Rewards successfully claimed!");
       // Refresh token info
       await fetchTokenInfo();
@@ -366,6 +549,16 @@ const TokenActionPopup = ({
         VeristableAVSABI,
         signer
       );
+      const tokenContract = new ethers.Contract(
+        token.address,
+        TokenABI,
+        provider
+      );
+      const reserveContract = new ethers.Contract(
+        reserveAddress,
+        ReserveABI,
+        provider
+      );
 
       // Check if contract is paused
       const isPaused = await avs.paused();
@@ -383,10 +576,28 @@ const TokenActionPopup = ({
       });
       console.log("Distribute TX:", tx);
       await tx.wait();
+
+      // Ambil data onchain terbaru
+      const totalSupplyRaw = await tokenContract.totalSupply();
+      const newTotalSupply = parseFloat(
+        ethers.formatUnits(totalSupplyRaw, tokenInfo?.decimals || 18)
+      );
+      const reserveBalanceRaw = await reserveContract.getReserveBalance(
+        token.address
+      );
+      const newReserveBalance = parseFloat(
+        ethers.formatUnits(reserveBalanceRaw, tokenInfo?.decimals || 18)
+      );
+      const totalStaked = await avs.totalTokenStakes(token.address);
+      const newRestake = parseFloat(ethers.formatUnits(totalStaked, 18));
+
+      // Simpan ke Supabase dengan data onchain
+      await saveToSupabase(newTotalSupply, newReserveBalance, newRestake);
+
       setDepositRewardAmount("");
       alert("Rewards successfully distributed!");
       // Refresh token info
-      fetchTokenInfo();
+      await fetchTokenInfo();
     } catch (err: any) {
       console.error("Error distributing rewards:", err);
       setErrorMessage(

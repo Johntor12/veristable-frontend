@@ -10,6 +10,19 @@ import { useState, useEffect } from "react";
 import TokenPopup from "./TokenPopup";
 import { useAccount, useWalletClient } from "wagmi";
 import { ethers } from "ethers";
+import { createClient } from "@supabase/supabase-js";
+
+// Supabase Configuration
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
+
+// Validate Supabase configuration
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.error(
+    "Supabase configuration missing. Please set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in .env.local"
+  );
+}
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 // ABI dan Alamat Kontrak
 const TokenFactoryABI = [
@@ -113,13 +126,119 @@ const TokenCard = ({ contractAddress, owner }: TokenProps) => {
   const [isLoadingBalance, setIsLoadingBalance] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // Log contractAddress untuk debugging
+  // Test Supabase connectivity on component mount
+  useEffect(() => {
+    const testSupabase = async () => {
+      console.log("Testing Supabase connectivity...");
+      try {
+        const { data, error } = await supabase
+          .from("real_estate")
+          .select("address")
+          .limit(1);
+        console.log("Supabase test result:", { data, error });
+        if (error) {
+          console.error("Supabase connectivity test failed:", error);
+        } else {
+          console.log("Supabase connectivity test successful. Data:", data);
+        }
+      } catch (err) {
+        console.error("Supabase connectivity test error:", err);
+      }
+    };
+    testSupabase();
+  }, []);
+
+  // Log contractAddress dan owner untuk debugging
   useEffect(() => {
     console.log("Received contractAddress:", contractAddress);
-    console.log("Is valid address:", ethers.isAddress(contractAddress));
-  }, [contractAddress]);
+    console.log("Received owner:", owner);
+    console.log("Is valid contractAddress:", ethers.isAddress(contractAddress));
+    console.log("Is valid owner:", ethers.isAddress(owner));
+  }, [contractAddress, owner]);
 
-  // Fetch data token dari kontrak
+  // Fungsi untuk menyimpan data ke Supabase
+  const saveToSupabase = async (
+    onchainTotalSupply: number,
+    onchainReserveBalance: number
+  ) => {
+    if (!ethers.isAddress(contractAddress)) {
+      console.error("Invalid contract address for Supabase:", contractAddress);
+      setErrorMessage("Invalid contract address for saving to Supabase");
+      return;
+    }
+
+    if (!ethers.isAddress(owner)) {
+      console.error("Invalid owner address for Supabase:", owner);
+      setErrorMessage("Invalid owner address for saving to Supabase");
+      return;
+    }
+
+    const realEstateData = {
+      address: contractAddress,
+      owner: owner,
+      reserve: Math.floor(onchainReserveBalance),
+      totalSupply: Math.floor(onchainTotalSupply),
+    };
+
+    try {
+      console.log(
+        "Attempting to save to Supabase real_estate table:",
+        realEstateData
+      );
+
+      // Check if row exists
+      const { data: existingData, error: selectError } = await supabase
+        .from("real_estate")
+        .select("address")
+        .eq("address", contractAddress)
+        .single();
+
+      console.log("Supabase select response:", { existingData, selectError });
+
+      if (selectError && selectError.code !== "PGRST116") {
+        console.error("Supabase select error:", selectError);
+        throw new Error(
+          `Failed to check existing data: ${selectError.message || JSON.stringify(selectError)}`
+        );
+      }
+
+      let data, error;
+      if (existingData) {
+        // Update existing row
+        ({ data, error } = await supabase
+          .from("real_estate")
+          .update({
+            owner: owner,
+            reserve: Math.floor(onchainReserveBalance),
+            totalSupply: Math.floor(onchainTotalSupply),
+          })
+          .eq("address", contractAddress));
+      } else {
+        // Insert new row
+        ({ data, error } = await supabase
+          .from("real_estate")
+          .insert([realEstateData]));
+      }
+
+      console.log("Supabase operation response:", { data, error });
+
+      if (error) {
+        console.error("Supabase operation error:", error);
+        throw new Error(
+          `Failed to save to Supabase: ${error.message || JSON.stringify(error)}`
+        );
+      }
+
+      console.log("Successfully saved to Supabase real_estate table:", data);
+    } catch (err: any) {
+      console.error("Error saving to Supabase:", err);
+      setErrorMessage(
+        `Failed to save to Supabase: ${err.message || "Unknown error"}`
+      );
+    }
+  };
+
+  // Fetch data token dari kontrak (tanpa menyimpan ke Supabase)
   useEffect(() => {
     const fetchTokenData = async () => {
       if (!walletClient || !account || !ethers.isAddress(contractAddress)) {
@@ -173,7 +292,7 @@ const TokenCard = ({ contractAddress, owner }: TokenProps) => {
         const reserveBalance = parseFloat(
           ethers.formatUnits(reserveBalanceRaw, decimals)
         );
-        const timestamp = Number(timestampBigInt); // Konversi BigInt ke number
+        const timestamp = Number(timestampBigInt);
         setReserveBalance(reserveBalance);
         setLastUpdateTimestamp(new Date(timestamp * 1000).toLocaleString());
 
@@ -222,6 +341,11 @@ const TokenCard = ({ contractAddress, owner }: TokenProps) => {
       const provider = new ethers.BrowserProvider(walletClient);
       const signer = await provider.getSigner();
       const contract = new ethers.Contract(contractAddress, TokenABI, signer);
+      const reserveContract = new ethers.Contract(
+        reserveAddress,
+        ReserveABI,
+        provider
+      );
 
       // Validasi bahwa hanya owner yang bisa mint
       const contractOwner = await contract.owner();
@@ -237,11 +361,25 @@ const TokenCard = ({ contractAddress, owner }: TokenProps) => {
       const tx = await contract.mint(account, amountRaw);
       await tx.wait();
 
-      // Perbarui state setelah mint
+      // Ambil data onchain terbaru
       const totalSupplyRaw = await contract.totalSupply();
-      setTotalSupply(parseFloat(ethers.formatUnits(totalSupplyRaw, decimals)));
+      const newTotalSupply = parseFloat(
+        ethers.formatUnits(totalSupplyRaw, decimals)
+      );
       const balanceRaw = await contract.balanceOf(account);
-      setOwnedByYou(parseFloat(ethers.formatUnits(balanceRaw, decimals)));
+      const newBalance = parseFloat(ethers.formatUnits(balanceRaw, decimals));
+      const reserveBalanceRaw =
+        await reserveContract.getReserveBalance(contractAddress);
+      const newReserveBalance = parseFloat(
+        ethers.formatUnits(reserveBalanceRaw, decimals)
+      );
+
+      // Perbarui state
+      setTotalSupply(newTotalSupply);
+      setOwnedByYou(newBalance);
+
+      // Simpan ke Supabase dengan data onchain
+      await saveToSupabase(newTotalSupply, newReserveBalance);
 
       setErrorMessage(null);
       alert(`Successfully minted ${amount} ${symbol}!`);
@@ -278,6 +416,11 @@ const TokenCard = ({ contractAddress, owner }: TokenProps) => {
       const provider = new ethers.BrowserProvider(walletClient);
       const signer = await provider.getSigner();
       const contract = new ethers.Contract(contractAddress, TokenABI, signer);
+      const reserveContract = new ethers.Contract(
+        reserveAddress,
+        ReserveABI,
+        provider
+      );
 
       // Validasi bahwa hanya owner yang bisa burn
       const contractOwner = await contract.owner();
@@ -293,11 +436,25 @@ const TokenCard = ({ contractAddress, owner }: TokenProps) => {
       const tx = await contract.burn(amountRaw);
       await tx.wait();
 
-      // Perbarui state setelah burn
+      // Ambil data onchain terbaru
       const totalSupplyRaw = await contract.totalSupply();
-      setTotalSupply(parseFloat(ethers.formatUnits(totalSupplyRaw, decimals)));
+      const newTotalSupply = parseFloat(
+        ethers.formatUnits(totalSupplyRaw, decimals)
+      );
       const balanceRaw = await contract.balanceOf(account);
-      setOwnedByYou(parseFloat(ethers.formatUnits(balanceRaw, decimals)));
+      const newBalance = parseFloat(ethers.formatUnits(balanceRaw, decimals));
+      const reserveBalanceRaw =
+        await reserveContract.getReserveBalance(contractAddress);
+      const newReserveBalance = parseFloat(
+        ethers.formatUnits(reserveBalanceRaw, decimals)
+      );
+
+      // Perbarui state
+      setTotalSupply(newTotalSupply);
+      setOwnedByYou(newBalance);
+
+      // Simpan ke Supabase dengan data onchain
+      await saveToSupabase(newTotalSupply, newReserveBalance);
 
       setErrorMessage(null);
       alert(`Successfully burned ${amount} ${symbol}!`);
@@ -339,6 +496,11 @@ const TokenCard = ({ contractAddress, owner }: TokenProps) => {
         ReserveABI,
         signer
       );
+      const tokenContract = new ethers.Contract(
+        contractAddress,
+        TokenABI,
+        provider
+      );
 
       // Konversi amount ke format yang sesuai dengan decimals
       const amountRaw = ethers.parseUnits(amount.toString(), decimals);
@@ -350,16 +512,25 @@ const TokenCard = ({ contractAddress, owner }: TokenProps) => {
       );
       await tx.wait();
 
-      // Perbarui reserve balance dan timestamp
-      const [reserveBalanceRaw, timestampBigInt] = await Promise.all([
-        reserveContract.getReserveBalance(contractAddress),
-        reserveContract.getLastUpdateTimestamp(),
-      ]);
-      const timestamp = Number(timestampBigInt); // Konversi BigInt ke number
-      setReserveBalance(
-        parseFloat(ethers.formatUnits(reserveBalanceRaw, decimals))
+      // Ambil data onchain terbaru
+      const reserveBalanceRaw =
+        await reserveContract.getReserveBalance(contractAddress);
+      const newReserveBalance = parseFloat(
+        ethers.formatUnits(reserveBalanceRaw, decimals)
       );
+      const totalSupplyRaw = await tokenContract.totalSupply();
+      const newTotalSupply = parseFloat(
+        ethers.formatUnits(totalSupplyRaw, decimals)
+      );
+      const timestampBigInt = await reserveContract.getLastUpdateTimestamp();
+      const timestamp = Number(timestampBigInt);
+
+      // Perbarui state
+      setReserveBalance(newReserveBalance);
       setLastUpdateTimestamp(new Date(timestamp * 1000).toLocaleString());
+
+      // Simpan ke Supabase dengan data onchain
+      await saveToSupabase(newTotalSupply, newReserveBalance);
 
       setErrorMessage(null);
       alert(`Successfully set reserve balance to ${amount} ${symbol}!`);
