@@ -20,6 +20,14 @@ interface Token {
   restake: number | string; // Float tetap dibiarkan sebagai number
 }
 
+interface SupabaseRealEstate {
+  name?: string;
+  address?: string;
+  totalSupply?: number | string | null;
+  reserve?: number | string | null;
+  restake?: number | string | null;
+}
+
 const RegisteredOperators = () => {
   const [tokens, setTokens] = useState<Token[]>([]);
   const [searchKeyword, setSearchKeyword] = useState("");
@@ -41,16 +49,16 @@ const RegisteredOperators = () => {
         return;
       }
 
-      const formattedTokens: Token[] = supabaseData.map(
-        (item: any, index: number) => ({
-          id: index + 1,
-          name: item.name || "Unknown",
-          address: item.address || "-",
-          totalSupply: item.totalSupply ? Number(item.totalSupply) : "-",
-          reserve: item.reserve ? Number(item.reserve) : "-",
-          restake: item.restake ? Number(item.restake) : "-",
-        })
-      );
+      const formattedTokens: Token[] = (
+        supabaseData as SupabaseRealEstate[]
+      ).map((item, index) => ({
+        id: index + 1,
+        name: item.name || "Unknown",
+        address: item.address || "-",
+        totalSupply: item.totalSupply ? Number(item.totalSupply) : "-",
+        reserve: item.reserve ? Number(item.reserve) : "-",
+        restake: item.restake ? Number(item.restake) : "-",
+      }));
 
       setTokens(formattedTokens);
     } catch (err) {

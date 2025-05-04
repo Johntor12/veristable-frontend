@@ -204,7 +204,7 @@ const TokenCard = ({ contractAddress, owner }: TokenProps) => {
       }
 
       console.log("Successfully saved to Supabase real_estate table:", data);
-    } catch (err: any) {
+    } catch (err: string) {
       console.error("Error saving to Supabase:", err);
       setErrorMessage(
         `Failed to save to Supabase: ${err.message || "Unknown error"}`
@@ -282,7 +282,7 @@ const TokenCard = ({ contractAddress, owner }: TokenProps) => {
           symbol,
           lastUpdateTimestamp: new Date(timestamp * 1000).toLocaleString(),
         });
-      } catch (err: any) {
+      } catch (err: string) {
         console.error("Error fetching token data:", err);
         setErrorMessage(
           `Failed to load token data: ${err.reason || err.message || "Unknown error"}`
@@ -357,7 +357,7 @@ const TokenCard = ({ contractAddress, owner }: TokenProps) => {
 
       setErrorMessage(null);
       alert(`Successfully minted ${amount} ${symbol}!`);
-    } catch (err: any) {
+    } catch (err: string) {
       console.error("Error minting token:", err);
       setErrorMessage(
         `Failed to mint token: ${err.reason || err.message || "Unknown error"}`
@@ -432,7 +432,7 @@ const TokenCard = ({ contractAddress, owner }: TokenProps) => {
 
       setErrorMessage(null);
       alert(`Successfully burned ${amount} ${symbol}!`);
-    } catch (err: any) {
+    } catch (err: string) {
       console.error("Error burning token:", err);
       setErrorMessage(
         `Failed to burn token: ${err.reason || err.message || "Unknown error"}`
@@ -508,7 +508,7 @@ const TokenCard = ({ contractAddress, owner }: TokenProps) => {
 
       setErrorMessage(null);
       alert(`Successfully set reserve balance to ${amount} ${symbol}!`);
-    } catch (err: any) {
+    } catch (err: string) {
       console.error("Error setting reserve balance:", err);
       let userMessage = "Failed to set reserve balance.";
       if (err.reason) {
