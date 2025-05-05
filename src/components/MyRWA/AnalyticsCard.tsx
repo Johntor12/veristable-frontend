@@ -15,7 +15,9 @@ const AnalyticsCard = ({}) => {
           <div className="text-[0.833vw] leading-[1.25vw]">View All</div>
         </button>
       </div>
-      <div className="w-full bg-[#E9EAEB] aspect-[668/298] rounded-[0.26vw]"></div>
+      <div className="w-full bg-[#E9EAEB] aspect-[668/298] rounded-[0.26vw] flex justify-center items-center">
+        <p className="text-[1.25vw] text-black font-bold">Coming Soon</p>
+      </div>
     </div>
   );
 };

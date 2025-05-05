@@ -541,7 +541,7 @@ export default function TokenActionPopup({
                 <div className="col-span-2">
                   <label className="block text-sm text-gray-500">Status</label>
                   <p
-                    className={`font-medium ${parseFloat(tokenInfo.reserve) >= parseFloat(tokenInfo.totalSupply) ? "text-green-500" : "text-red-500"}`}
+                    className={`font-medium text-gray-500  ${parseFloat(tokenInfo.reserve) >= parseFloat(tokenInfo.totalSupply) ? "text-green-500" : "text-red-500"}`}
                   >
                     {parseFloat(tokenInfo.reserve) >=
                     parseFloat(tokenInfo.totalSupply)
@@ -553,11 +553,11 @@ export default function TokenActionPopup({
                   <label className="block text-sm text-gray-500">
                     Token Name
                   </label>
-                  <p className="font-medium">{tokenInfo.name}</p>
+                  <p className="font-medium text-gray-500 ">{tokenInfo.name}</p>
                 </div>
                 <div>
                   <label className="block text-sm text-gray-500">Address</label>
-                  <p className="font-mono text-xs truncate">
+                  <p className="font-mono text-xs text-gray-500 truncate">
                     {tokenInfo.address}
                   </p>
                 </div>
@@ -565,25 +565,33 @@ export default function TokenActionPopup({
                   <label className="block text-sm text-gray-500">
                     Total Supply
                   </label>
-                  <p className="font-medium">{tokenInfo.totalSupply}</p>
+                  <p className="font-medium text-gray-500 ">
+                    {tokenInfo.totalSupply}
+                  </p>
                 </div>
                 <div>
                   <label className="block text-sm text-gray-500">
                     Reserve Balance
                   </label>
-                  <p className="font-medium">{tokenInfo.reserve}</p>
+                  <p className="font-medium text-gray-500 ">
+                    {tokenInfo.reserve}
+                  </p>
                 </div>
                 <div>
                   <label className="block text-sm text-gray-500">
                     Your Balance
                   </label>
-                  <p className="font-medium">{tokenInfo.userBalance}</p>
+                  <p className="font-medium text-gray-500 ">
+                    {tokenInfo.userBalance}
+                  </p>
                 </div>
                 <div>
                   <label className="block text-sm text-gray-500">
                     Last Update
                   </label>
-                  <p className="font-medium">{tokenInfo.lastUpdate}</p>
+                  <p className="font-medium text-gray-500 ">
+                    {tokenInfo.lastUpdate}
+                  </p>
                 </div>
               </div>
             </div>
@@ -598,31 +606,41 @@ export default function TokenActionPopup({
                   <label className="block text-sm text-gray-500">
                     Your Stake
                   </label>
-                  <p className="font-medium">{tokenInfo.userStake}</p>
+                  <p className="font-medium text-gray-500 ">
+                    {tokenInfo.userStake}
+                  </p>
                 </div>
                 <div>
                   <label className="block text-sm text-gray-500">
                     Total Staked
                   </label>
-                  <p className="font-medium">{tokenInfo.totalStaked}</p>
+                  <p className="font-medium text-gray-500 ">
+                    {tokenInfo.totalStaked}
+                  </p>
                 </div>
                 <div>
                   <label className="block text-sm text-gray-500">
                     Rewards Pool
                   </label>
-                  <p className="font-medium">{tokenInfo.rewardsPool}</p>
+                  <p className="font-medium text-gray-500 ">
+                    {tokenInfo.rewardsPool}
+                  </p>
                 </div>
                 <div>
                   <label className="block text-sm text-gray-500">
                     Pending Rewards
                   </label>
-                  <p className="font-medium">{tokenInfo.pendingRewards}</p>
+                  <p className="font-medium text-gray-500 ">
+                    {tokenInfo.pendingRewards}
+                  </p>
                 </div>
                 <div>
                   <label className="block text-sm text-gray-500">
                     Minimum Stake
                   </label>
-                  <p className="font-medium">{tokenInfo.minStake}</p>
+                  <p className="font-medium text-gray-500 ">
+                    {tokenInfo.minStake}
+                  </p>
                 </div>
               </div>
             </div>
@@ -631,7 +649,7 @@ export default function TokenActionPopup({
             <div className="mb-6">
               <div className="flex border-b border-gray-200 mb-4">
                 <button
-                  className={`px-4 py-2 font-medium ${
+                  className={`px-4 py-2 font-medium text-gray-500  ${
                     activeTab === "stake"
                       ? "border-b-2 border-purple-600 text-purple-600"
                       : "text-gray-500"
@@ -641,7 +659,7 @@ export default function TokenActionPopup({
                   Stake
                 </button>
                 <button
-                  className={`px-4 py-2 font-medium ${
+                  className={`px-4 py-2 font-medium text-gray-500  ${
                     activeTab === "unstake"
                       ? "border-b-2 border-purple-600 text-purple-600"
                       : "text-gray-500"
@@ -651,7 +669,7 @@ export default function TokenActionPopup({
                   Unstake
                 </button>
                 <button
-                  className={`px-4 py-2 font-medium ${
+                  className={`px-4 py-2 font-medium text-gray-500  ${
                     activeTab === "rewards"
                       ? "border-b-2 border-purple-600 text-purple-600"
                       : "text-gray-500"
@@ -664,7 +682,7 @@ export default function TokenActionPopup({
 
               {activeTab === "stake" && (
                 <div className="space-y-4">
-                  <label className="block text-sm font-medium text-gray-700">
+                  <label className="block text-sm font-medium text-gray-500  text-gray-700">
                     Amount to Stake (ETH){" "}
                     <span className="text-red-500">*</span>
                   </label>
@@ -696,7 +714,7 @@ export default function TokenActionPopup({
 
               {activeTab === "unstake" && (
                 <div className="space-y-4">
-                  <label className="block text-sm font-medium text-gray-700">
+                  <label className="block text-sm font-medium text-gray-500  text-gray-700">
                     Amount to Unstake (ETH){" "}
                     <span className="text-red-500">*</span>
                   </label>
@@ -738,7 +756,7 @@ export default function TokenActionPopup({
                     {isLoading ? "Processing..." : "Claim Rewards"}
                   </button>
 
-                  <label className="block text-sm font-medium text-gray-700">
+                  <label className="block text-sm font-medium text-gray-500  text-gray-700">
                     Amount to Distribute (ETH){" "}
                     <span className="text-red-500">*</span>
                   </label>
