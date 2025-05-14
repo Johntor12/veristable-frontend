@@ -1,69 +1,41 @@
-import { useMemo } from "react";
+import { Button as ShadcnButton } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { ReactNode } from "react"; // Import ReactNode
 
 type ButtonProps = {
-  variant?: "primary" | "secondary" | "custom";
-  size?: "sm" | "md" | "lg" | "custom";
-  text?: string;
+  variant?:
+    | "default"
+    | "secondary"
+    | "outline"
+    | "destructive"
+    | "ghost"
+    | "link";
+  size?: "default" | "sm" | "lg" | "icon";
   fullW?: boolean;
   disabled?: boolean;
-  customClass?: string;
-  onPress?: () => void;
+  className?: string;
   onClick?: () => void;
+  children?: ReactNode; // Add children prop
 };
 
 export default function Button({
-  variant = "primary",
-  size = "sm",
-  text = "Button",
+  variant = "default",
+  size = "default",
   fullW = false,
   disabled = false,
-  customClass = "",
-  //   onPress = () => {},
+  className = "",
   onClick = () => {},
+  children, // Accept children
 }: ButtonProps) {
-  const widthStyle = fullW ? "w-full" : "w-fit";
-
-  const btnVariant = useMemo(() => {
-    switch (variant) {
-      case "primary":
-        return `bg-[#420092] ${widthStyle} text-white cursor-pointer font-jakarta rounded-md border active:border-black`;
-      case "secondary":
-        return `bg-transparent ${widthStyle} text-[#420092] cursor-pointer rounded-md border font-jakarta text-primary-300 active:border-black`;
-      default:
-        return "";
-    }
-  }, [variant, widthStyle]);
-
-  const btnSize = useMemo(() => {
-    switch (size) {
-      case "sm":
-        return "px-[21px] py-[9px] text-[16px]";
-      case "md":
-        return "px-[30px] py-[16px]";
-      case "lg":
-        return "px-12 py-4";
-        case "custom":
-          return customClass; // <--- biar customClass doang yang dipakai
-      default:
-        return "";
-    }
-  }, [size, customClass]);
-
-  const buttonClasses = useMemo(() => {
-    return `${btnVariant} ${btnSize} ${customClass}`.trim();
-  }, [btnVariant, btnSize, customClass]);
-
   return (
-    <button
-      className={`${buttonClasses} ${
-        disabled
-          ? "font-jakarta font-semibold opacity-60 disabled:cursor-not-allowed"
-          : ""
-      }`}
+    <ShadcnButton
+      variant={variant}
+      size={size}
       onClick={onClick}
       disabled={disabled}
+      className={cn(fullW && "w-full", className)}
     >
-      <p className="">{text}</p>
-    </button>
+      {children} {/* Render children */}
+    </ShadcnButton>
   );
 }

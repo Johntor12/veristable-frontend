@@ -1,5 +1,13 @@
 // import { deflate } from "zlib";
-import Button from "../Button";
+import Button from "../Button"; // Assuming this is the refactored shadcn Button
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card"; // Import shadcn Card components
+import { cn } from "@/lib/utils"; // Import cn
 
 export type TeamCardProps = {
   team?: string;
@@ -15,28 +23,43 @@ const TeamCard = ({
   customClass,
 }: TeamCardProps) => {
   return (
-    <div
-      className={`flex flex-col rounded-[0.694vw] border-1 border-[#D5D7DA] w-[25vw] aspect-[360/135] gap-[1.111svw] ${customClass}`}
+    <Card
+      className={cn(
+        "flex flex-col rounded-[0.694vw] border-1 border-[#D5D7DA] w-[25vw] aspect-[360/135] gap-[1.111svw]",
+        customClass
+      )}
     >
-      <div className="flex flex-col justify-between p-4 gap-[1.111vw]">
+      {" "}
+      {/* Use shadcn Card */}
+      <CardContent className="flex flex-col justify-between p-4 gap-[1.111vw]">
+        {" "}
+        {/* Use CardContent */}
         <div className="flex flex-col gap-[0.139vw] font-jakarta">
-          <h4 className="flex justify-items-center text-[1.25vw] leading-[1.25vw] text-black font-bold">
+          <CardTitle className="flex justify-items-center text-[1.25vw] leading-[1.25vw] text-black font-bold">
+            {" "}
+            {/* Use CardTitle */}
             {team}
-          </h4>
-          <p className="text-[0.972vw] leading-[1.458vw] font-normal font-jakarta text-[#535862]">
+          </CardTitle>
+          <CardDescription className="text-[0.972vw] leading-[1.458vw] font-normal font-jakarta text-[#535862]">
+            {" "}
+            {/* Use CardDescription */}
             {description}
-          </p>
+          </CardDescription>
         </div>
         <div className="flex justify-between">
           <p className="font-jakarta text-[0.833vw] text-black flex items-center">
             {createdAt}
           </p>
           <div className="w-[7.708vw] aspect-[111/30]">
-            <Button variant={"secondary"} text={"View"} fullW={true} />
+            <Button variant={"outline"} size={"sm"} fullW={true}>
+              {" "}
+              {/* Use children instead of text prop, use outline variant and sm size */}
+              View
+            </Button>
           </div>
         </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 };
 

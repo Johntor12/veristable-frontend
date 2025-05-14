@@ -1,8 +1,19 @@
 "use client";
-import { IoClose } from "react-icons/io5";
 import { useState, useEffect } from "react";
 import { ethers } from "ethers";
 import { createClient } from "@supabase/supabase-js";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog"; // Import shadcn Dialog components
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"; // Import shadcn Tabs components
+import { Input } from "@/components/ui/input"; // Import shadcn Input
+import { Button } from "@/components/ui/button"; // Import shadcn Button
+import { X } from "lucide-react"; // Import Lucide X icon
+import { cn } from "@/lib/utils"; // Import cn
 
 // Supabase Configuration
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
@@ -393,7 +404,7 @@ export default function TokenActionPopup({
       }
 
       const userStake = await avs.tokenStakes(token.address, account);
-      if (userStake === 0n) {
+      if (userStake === BigInt(0)) {
         setErrorMessage("No active stake found. Cannot claim rewards.");
         return;
       }
@@ -509,295 +520,171 @@ export default function TokenActionPopup({
   };
 
   useEffect(() => {
-    if (isOpen) fetchTokenInfo();
-  }, [isOpen]);
-
-  if (!isOpen) return null;
+    if (isOpen) {
+      fetchTokenInfo();
+    } else {
+      setTokenInfo(null); // Reset token info when dialog is closed
+      setErrorMessage(null); // Clear error message
+      setStakeAmount(""); // Clear input fields
+      setUnstakeAmount("");
+      setDepositRewardAmount("");
+      setActiveTab("stake"); // Reset to default tab
+    }
+  }, [isOpen, token.address, walletClient, account]); // Added dependencies
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50">
-      <div className="bg-white rounded-lg w-full max-w-xl max-h-[90vh] overflow-y-auto p-6 shadow-xl relative border border-gray-200">
-        <button
-          onClick={onClose}
-          className="absolute right-4 top-4 text-2xl text-gray-500 hover:text-gray-700"
-        >
-          <IoClose />
-        </button>
-
-        <h2 className="text-xl font-bold mb-6 text-gray-800">Token Actions</h2>
-
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      {" "}
+      {/* Use shadcn Dialog */}
+      <DialogContent className="sm:max-w-[425px]">
+        {" "}
+        {/* Use shadcn DialogContent */}
+        <DialogHeader>
+          {" "}
+          {/* Use shadcn DialogHeader */}
+          <DialogTitle>Token Actions</DialogTitle>{" "}
+          {/* Use shadcn DialogTitle */}
+          <DialogDescription>
+            {" "}
+            {/* Use shadcn DialogDescription */}
+            Perform actions on {token.name} ({token.address.slice(0, 6)}...
+            {token.address.slice(-4)})
+          </DialogDescription>
+        </DialogHeader>
+        {errorMessage && <p className="text-red-500 text-sm">{errorMessage}</p>}
         {isLoading ? (
-          <div className="flex justify-center py-10">
-            <div className="w-10 h-10 border-4 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
-          </div>
+          <div className="text-center">Loading token info...</div>
         ) : tokenInfo ? (
-          <>
-            {/* Token Info */}
-            <div className="mb-6">
-              <h3 className="font-semibold text-gray-700 mb-3">
-                Token Information
-              </h3>
-              <div className="grid grid-cols-2 gap-4 bg-gray-50 p-4 rounded-lg border border-gray-200">
-                <div className="col-span-2">
-                  <label className="block text-sm text-gray-500">Status</label>
-                  <p
-                    className={`font-medium text-gray-500  ${parseFloat(tokenInfo.reserve) >= parseFloat(tokenInfo.totalSupply) ? "text-green-500" : "text-red-500"}`}
-                  >
-                    {parseFloat(tokenInfo.reserve) >=
-                    parseFloat(tokenInfo.totalSupply)
-                      ? "VERIFIED"
-                      : "UNVERIFIED"}
-                  </p>
-                </div>
-                <div>
-                  <label className="block text-sm text-gray-500">
-                    Token Name
-                  </label>
-                  <p className="font-medium text-gray-500 ">{tokenInfo.name}</p>
-                </div>
-                <div>
-                  <label className="block text-sm text-gray-500">Address</label>
-                  <p className="font-mono text-xs text-gray-500 truncate">
-                    {tokenInfo.address}
-                  </p>
-                </div>
-                <div>
-                  <label className="block text-sm text-gray-500">
-                    Total Supply
-                  </label>
-                  <p className="font-medium text-gray-500 ">
-                    {tokenInfo.totalSupply}
-                  </p>
-                </div>
-                <div>
-                  <label className="block text-sm text-gray-500">
-                    Reserve Balance
-                  </label>
-                  <p className="font-medium text-gray-500 ">
-                    {tokenInfo.reserve}
-                  </p>
-                </div>
-                <div>
-                  <label className="block text-sm text-gray-500">
-                    Your Balance
-                  </label>
-                  <p className="font-medium text-gray-500 ">
-                    {tokenInfo.userBalance}
-                  </p>
-                </div>
-                <div>
-                  <label className="block text-sm text-gray-500">
-                    Last Update
-                  </label>
-                  <p className="font-medium text-gray-500 ">
-                    {tokenInfo.lastUpdate}
-                  </p>
-                </div>
+          <Tabs
+            value={activeTab}
+            onValueChange={(value) =>
+              setActiveTab(value as "stake" | "unstake" | "rewards")
+            }
+            className="w-full"
+          >
+            {" "}
+            {/* Use shadcn Tabs */}
+            <TabsList className="grid w-full grid-cols-3">
+              {" "}
+              {/* Use shadcn TabsList */}
+              <TabsTrigger value="stake">Stake</TabsTrigger>{" "}
+              {/* Use shadcn TabsTrigger */}
+              <TabsTrigger value="unstake">Unstake</TabsTrigger>
+              <TabsTrigger value="rewards">Rewards</TabsTrigger>
+            </TabsList>
+            <TabsContent value="stake" className="space-y-4">
+              {" "}
+              {/* Use shadcn TabsContent */}
+              <div>
+                <p className="text-sm font-medium text-gray-700">
+                  Your Balance: {tokenInfo.userBalance}
+                </p>
+                <p className="text-sm font-medium text-gray-700">
+                  Minimum Stake: {tokenInfo.minStake}
+                </p>
               </div>
-            </div>
-
-            {/* Staking Info */}
-            <div className="mb-6">
-              <h3 className="font-semibold text-gray-700 mb-3">
-                Staking Information
-              </h3>
-              <div className="grid grid-cols-2 gap-4 bg-gray-50 p-4 rounded-lg border border-gray-200">
-                <div>
-                  <label className="block text-sm text-gray-500">
-                    Your Stake
-                  </label>
-                  <p className="font-medium text-gray-500 ">
-                    {tokenInfo.userStake}
-                  </p>
-                </div>
-                <div>
-                  <label className="block text-sm text-gray-500">
-                    Total Staked
-                  </label>
-                  <p className="font-medium text-gray-500 ">
-                    {tokenInfo.totalStaked}
-                  </p>
-                </div>
-                <div>
-                  <label className="block text-sm text-gray-500">
-                    Rewards Pool
-                  </label>
-                  <p className="font-medium text-gray-500 ">
-                    {tokenInfo.rewardsPool}
-                  </p>
-                </div>
-                <div>
-                  <label className="block text-sm text-gray-500">
-                    Pending Rewards
-                  </label>
-                  <p className="font-medium text-gray-500 ">
-                    {tokenInfo.pendingRewards}
-                  </p>
-                </div>
-                <div>
-                  <label className="block text-sm text-gray-500">
-                    Minimum Stake
-                  </label>
-                  <p className="font-medium text-gray-500 ">
-                    {tokenInfo.minStake}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Tabs */}
-            <div className="mb-6">
-              <div className="flex border-b border-gray-200 mb-4">
-                <button
-                  className={`px-4 py-2 font-medium text-gray-500  ${
-                    activeTab === "stake"
-                      ? "border-b-2 border-purple-600 text-purple-600"
-                      : "text-gray-500"
-                  }`}
-                  onClick={() => setActiveTab("stake")}
+              <div className="space-y-2">
+                <label
+                  htmlFor="stake-amount"
+                  className="block text-sm font-medium text-gray-700"
                 >
-                  Stake
-                </button>
-                <button
-                  className={`px-4 py-2 font-medium text-gray-500  ${
-                    activeTab === "unstake"
-                      ? "border-b-2 border-purple-600 text-purple-600"
-                      : "text-gray-500"
-                  }`}
-                  onClick={() => setActiveTab("unstake")}
-                >
-                  Unstake
-                </button>
-                <button
-                  className={`px-4 py-2 font-medium text-gray-500  ${
-                    activeTab === "rewards"
-                      ? "border-b-2 border-purple-600 text-purple-600"
-                      : "text-gray-500"
-                  }`}
-                  onClick={() => setActiveTab("rewards")}
-                >
-                  Rewards
-                </button>
+                  Amount to Stake (ETH)
+                </label>
+                <Input
+                  id="stake-amount"
+                  type="number"
+                  value={stakeAmount}
+                  onChange={(e) => setStakeAmount(e.target.value)}
+                  placeholder="0.0"
+                />
               </div>
-
-              {activeTab === "stake" && (
-                <div className="space-y-4">
-                  <label className="block text-sm font-medium text-gray-500  text-gray-700">
-                    Amount to Stake (ETH){" "}
-                    <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="number"
-                    step="0.0001"
-                    min="0.0001"
-                    placeholder="Enter amount to stake"
-                    value={stakeAmount}
-                    onChange={(e) => setStakeAmount(e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
-                    disabled={isLoading}
-                  />
-                  <div className="flex justify-end">
-                    <button
-                      onClick={stakeForToken}
-                      disabled={
-                        isLoading ||
-                        !stakeAmount ||
-                        parseFloat(stakeAmount) <= 0
-                      }
-                      className="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors disabled:bg-green-300"
-                    >
-                      {isLoading ? "Processing..." : "Stake ETH"}
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {activeTab === "unstake" && (
-                <div className="space-y-4">
-                  <label className="block text-sm font-medium text-gray-500  text-gray-700">
-                    Amount to Unstake (ETH){" "}
-                    <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="number"
-                    step="0.0001"
-                    min="0.0001"
-                    placeholder="Enter amount to unstake"
-                    value={unstakeAmount}
-                    onChange={(e) => setUnstakeAmount(e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
-                    disabled={isLoading}
-                  />
-                  <div className="flex justify-end">
-                    <button
-                      onClick={unstakeFromToken}
-                      disabled={
-                        isLoading ||
-                        !unstakeAmount ||
-                        parseFloat(unstakeAmount) <= 0 ||
-                        !tokenInfo ||
-                        parseFloat(tokenInfo.userStake) <= 0
-                      }
-                      className="px-6 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors disabled:bg-red-300"
-                    >
-                      {isLoading ? "Processing..." : "Unstake ETH"}
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {activeTab === "rewards" && (
-                <div className="space-y-4">
-                  <button
-                    onClick={claimTokenRewards}
-                    disabled={isLoading}
-                    className="w-full px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:bg-blue-300"
-                  >
-                    {isLoading ? "Processing..." : "Claim Rewards"}
-                  </button>
-
-                  <label className="block text-sm font-medium text-gray-500  text-gray-700">
-                    Amount to Distribute (ETH){" "}
-                    <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="number"
-                    step="0.0001"
-                    min="0.0001"
-                    placeholder="Enter amount to distribute"
-                    value={depositRewardAmount}
-                    onChange={(e) => setDepositRewardAmount(e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
-                    disabled={isLoading}
-                  />
-                  <div className="flex justify-end">
-                    <button
-                      onClick={distributeTokenRewards}
-                      disabled={
-                        isLoading ||
-                        !depositRewardAmount ||
-                        parseFloat(depositRewardAmount) <= 0
-                      }
-                      className="w-full px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:bg-blue-300"
-                    >
-                      {isLoading ? "Processing..." : "Distribute Rewards"}
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Error Message */}
-            {errorMessage && (
-              <div className="p-3 mt-4 bg-red-100 text-red-700 rounded-md text-sm">
-                {errorMessage}
+              <Button
+                onClick={stakeForToken}
+                className="w-full"
+                disabled={isLoading}
+              >
+                {isLoading ? "Staking..." : "Stake"}
+              </Button>
+            </TabsContent>
+            <TabsContent value="unstake" className="space-y-4">
+              {" "}
+              {/* Use shadcn TabsContent */}
+              <div>
+                <p className="text-sm font-medium text-gray-700">
+                  Your Stake: {tokenInfo.userStake}
+                </p>
               </div>
-            )}
-          </>
+              <div className="space-y-2">
+                <label
+                  htmlFor="unstake-amount"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  Amount to Unstake (ETH)
+                </label>
+                <Input
+                  id="unstake-amount"
+                  type="number"
+                  value={unstakeAmount}
+                  onChange={(e) => setUnstakeAmount(e.target.value)}
+                  placeholder="0.0"
+                />
+              </div>
+              <Button
+                onClick={unstakeFromToken}
+                className="w-full"
+                disabled={isLoading}
+              >
+                {isLoading ? "Unstaking..." : "Unstake"}
+              </Button>
+            </TabsContent>
+            <TabsContent value="rewards" className="space-y-4">
+              {" "}
+              {/* Use shadcn TabsContent */}
+              <div>
+                <p className="text-sm font-medium text-gray-700">
+                  Pending Rewards: {tokenInfo.pendingRewards}
+                </p>
+                <p className="text-sm font-medium text-gray-700">
+                  Rewards Pool: {tokenInfo.rewardsPool}
+                </p>
+              </div>
+              <Button
+                onClick={claimTokenRewards}
+                className="w-full"
+                disabled={isLoading}
+              >
+                {isLoading ? "Claiming..." : "Claim Rewards"}
+              </Button>
+              <div className="space-y-2">
+                <label
+                  htmlFor="deposit-rewards-amount"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  Amount to Deposit to Rewards Pool (ETH)
+                </label>
+                <Input
+                  id="deposit-rewards-amount"
+                  type="number"
+                  value={depositRewardAmount}
+                  onChange={(e) => setDepositRewardAmount(e.target.value)}
+                  placeholder="0.0"
+                />
+              </div>
+              <Button
+                onClick={distributeTokenRewards}
+                className="w-full"
+                disabled={isLoading}
+              >
+                {isLoading ? "Depositing..." : "Deposit Rewards"}
+              </Button>
+            </TabsContent>
+          </Tabs>
         ) : (
-          <p className="text-center text-gray-500">Failed to load token data</p>
+          <div className="text-center text-red-500">
+            Failed to load token info.
+          </div>
         )}
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

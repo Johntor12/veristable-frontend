@@ -1,8 +1,16 @@
 "use client";
 
 import Image from "next/image";
-import Button from "../Button";
+import Button from "../Button"; // Assuming this is the refactored shadcn Button
 import { useRouter } from "next/navigation";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card"; // Import shadcn Card components
+import { cn } from "@/lib/utils"; // Import cn
 
 export type RWACardProps = {
   team: string;
@@ -15,7 +23,7 @@ export type RWACardProps = {
 export type ProjectRecentProps = {
   titleSection?: string;
   descSection?: string;
-  data?: RWACardProps[];
+  data?: RWACardProps[]; // Use RWACProps type
 };
 
 const RWACard = ({
@@ -33,7 +41,9 @@ const RWACard = ({
   };
 
   return (
-    <div className="flex flex-col rounded-[0.694vw] border-1 border-[#D5D7DA] w-[25vw] aspect-[360/283]">
+    <Card className="flex flex-col rounded-[0.694vw] border-1 border-[#D5D7DA] w-[25vw] aspect-[360/283]">
+      {" "}
+      {/* Use shadcn Card */}
       <div className="relative w-full aspect-[360/136]">
         <Image
           src={image}
@@ -43,14 +53,20 @@ const RWACard = ({
           onError={() => console.error(`Failed to load image: ${image}`)}
         />
       </div>
-      <div className="flex flex-col justify-between p-4 gap-[0.883vw]">
+      <CardContent className="flex flex-col justify-between p-4 gap-[0.883vw]">
+        {" "}
+        {/* Use CardContent */}
         <div className="flex flex-col gap-[0.139vw] font-jakarta">
-          <h4 className="flex justify-items-center text-[0.863vw] leading-[1.25vw] text-[#420092] font-medium">
+          <CardDescription className="flex justify-items-center text-[0.863vw] leading-[1.25vw] text-[#420092] font-medium">
+            {" "}
+            {/* Use CardDescription */}
             {team}
-          </h4>
-          <p className="font-jakarta text-[1.25vw] font-bold text-black">
+          </CardDescription>
+          <CardTitle className="font-jakarta text-[1.25vw] font-bold text-black">
+            {" "}
+            {/* Use CardTitle */}
             {title}
-          </p>
+          </CardTitle>
           <p className="text-[0.972vw] leading-[1.458vw] font-normal font-jakarta text-[#535862]">
             {description}
           </p>
@@ -58,15 +74,17 @@ const RWACard = ({
         <div className="flex justify-end">
           <div className="w-[7.708vw] aspect-[111/30]">
             <Button
-              variant={"secondary"}
-              text={"View"}
+              variant={"outline"} // Use shadcn outline variant
+              size={"sm"} // Use shadcn sm size
               fullW={true}
               onClick={handleViewClick} // Tambahkan onClick untuk navigasi
-            />
+            >
+              View {/* Use children instead of text prop */}
+            </Button>
           </div>
         </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 };
 

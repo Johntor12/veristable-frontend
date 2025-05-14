@@ -4,9 +4,20 @@ import Image from "next/image";
 import Button from "@/components/Button";
 import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import { Input } from "@/components/ui/input"; // Import shadcn Input
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"; // Import shadcn Card components
+import { cn } from "@/lib/utils";
+import { Search } from "lucide-react"; // Import Search icon
 
 // Tipe untuk Card dan Section
-type Card = {
+type CardData = {
+  // Renamed to avoid conflict with shadcn Card component
   badge: string;
   title: string;
   description: string;
@@ -16,7 +27,7 @@ type Card = {
 type Section = {
   heading: string;
   caption: string;
-  cards: Card[];
+  cards: CardData[]; // Use CardData type
 };
 
 type HeroProps = {
@@ -40,11 +51,12 @@ const Hero = ({ sections }: HeroProps) => {
           card.by.toLowerCase().includes(keyword)
       ),
     }));
-  }, [searchKeyword]);
+  }, [searchKeyword, sections]); // Added sections to dependency array
 
   // Fungsi searching
   const handleSearch = () => {
     console.log("Searching:", searchKeyword);
+    // Implement actual search logic or trigger data fetching here
   };
 
   // Function to handle "Deploy" button click
@@ -66,25 +78,22 @@ const Hero = ({ sections }: HeroProps) => {
               explore a wide range <br /> of available RWAs.
             </p>
             <div className="relative w-[59%]">
-              <input
+              <Input
                 type="text"
                 placeholder="Search RWA..."
-                className="w-full border border-[#B086E2] rounded-full px-3.5 py-2 text-[#535862] text-[0.83vw] outline-none"
+                className="rounded-full pr-10 text-[0.83vw]" // Adjust padding for icon
                 value={searchKeyword}
                 onChange={(e) => setSearchKeyword(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleSearch()}
               />
-              <button
-                className="absolute right-3 top-1/2 -translate-y-1/2"
+              <Button
+                variant="ghost" // Use ghost variant for a minimal button
+                size="icon" // Use icon size
+                className="absolute right-1 top-1/2 -translate-y-1/2" // Position the button
                 onClick={handleSearch}
               >
-                <Image
-                  src="/icons/OutlineSearch.png"
-                  alt="search"
-                  width={18}
-                  height={18}
-                />
-              </button>
+                <Search className="h-4 w-4" /> {/* Use Lucide Search icon */}
+              </Button>
             </div>
           </div>
 
@@ -109,36 +118,44 @@ const Hero = ({ sections }: HeroProps) => {
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {section.cards.length > 0 ? (
-                section.cards.map((card: Card, i: number) => (
-                  <div
-                    key={i}
-                    className="w-[28.2vw] h-[11.875vw] border border-[#E5E5E5] rounded-lg p-4 flex flex-col justify-between relative"
-                  >
-                    <div>
-                      <p className="text-[#039855] text-[0.833vw] font-medium mb-2">
-                        {card.badge}
-                      </p>
-                      <h3 className="text-black text-[1.25vw] font-bold mb-1">
-                        {card.title}
-                      </h3>
-                      <p className="text-[#535862] text-[0.972vw] mb-4">
-                        {card.description}
-                      </p>
-                      <p className="text-black text-[0.833vw] mt-[2.8vw] ml-[0.3vw]">
-                        by. {card.by}
-                      </p>
-                    </div>
-                    <div className="absolute right-4 bottom-4 w-[9vw]">
-                      <Button
-                        text="Deploy"
-                        variant="secondary"
-                        size="custom"
-                        customClass="w-full py-[0.4vw] text-[0.9vw] border-[0.5px]"
-                        onClick={() => handleDeploy(card.title)}
-                      />
-                    </div>
-                  </div>
-                ))
+                section.cards.map(
+                  (
+                    card: CardData,
+                    i: number // Use CardData type
+                  ) => (
+                    <Card
+                      key={i}
+                      className="w-[28.2vw] h-[11.875vw] p-4 flex flex-col justify-between relative"
+                    >
+                      <CardHeader className="p-0">
+                        <CardDescription className="text-[#039855] text-[0.833vw] font-medium mb-2">
+                          {card.badge}
+                        </CardDescription>
+                        <CardTitle className="text-black text-[1.25vw] font-bold mb-1">
+                          {card.title}
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="p-0">
+                        <p className="text-[#535862] text-[0.972vw] mb-4">
+                          {card.description}
+                        </p>
+                        <p className="text-black text-[0.833vw] mt-[2.8vw] ml-[0.3vw]">
+                          by. {card.by}
+                        </p>
+                      </CardContent>
+                      <div className="absolute right-4 bottom-4 w-[9vw]">
+                        <Button
+                          variant="outline" // Use outline variant
+                          size="sm" // Use shadcn size
+                          className="w-full py-[0.4vw] text-[0.9vw] border-[0.5px]" // Apply custom classes via className
+                          onClick={() => handleDeploy(card.title)}
+                        >
+                          Deploy
+                        </Button>
+                      </div>
+                    </Card>
+                  )
+                )
               ) : (
                 <p className="text-[1vw] text-[#999]">No results found.</p>
               )}

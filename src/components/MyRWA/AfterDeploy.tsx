@@ -1,12 +1,18 @@
+"use client";
+
 import Image from "next/image";
 import DummyHouse from "../../assets/MyRWA/Dummy_Image_RWA.png";
-import { IoMdCopy, IoIosOpen } from "react-icons/io";
-import { HiCheck } from "react-icons/hi";
 import { useMemo } from "react";
 import RegisteredOperators from "./RegisteredOperators";
 import TokenCard from "./TokenCard";
 import AnalyticsCard from "./AnalyticsCard";
 import TeamCard from "./TeamCard";
+import { Button } from "@/components/ui/button"; // Import shadcn Button
+import { Progress } from "@/components/ui/progress"; // Import shadcn Progress
+import { Copy, ExternalLink, Check } from "lucide-react"; // Import Lucide icons
+import { cn } from "@/lib/utils";
+import { useAccount } from "wagmi"; // Import useAccount
+
 // import TokenPopup from "./TokenPopup";
 
 type AfterDeployProps = {
@@ -18,24 +24,47 @@ const SmartContractAddress = ({
 }: {
   contractAddress: string;
 }) => {
+  // TODO: Implement copy to clipboard functionality
+  const handleCopy = () => {
+    navigator.clipboard.writeText(contractAddress);
+    // Optionally show a success message
+  };
+
   return (
-    <button className="flex flex-row gap-[0.333vw] hover:cursor-pointer active:cursor-pointer border-1 border-[#D5D7DA] rounded-[0.208vw] w-[10.833vw] aspect-[156/36] justify-center items-center">
-      <IoMdCopy className="w-[1.25vw] aspect-square text-[#C5C4C8]" />
-      <p className="text-center text-[#0A0D12] font-jakarta text-[#0A0D12] text-[0.833vw]">
+    <Button
+      variant="outline" // Use outline variant
+      size="sm" // Use small size
+      className="flex flex-row gap-[0.333vw] w-[10.833vw] aspect-[156/36] justify-center items-center text-[0.833vw]" // Apply custom classes
+      onClick={handleCopy}
+    >
+      <Copy className="w-[1.25vw] aspect-square text-[#C5C4C8]" />{" "}
+      {/* Use Lucide Copy icon */}
+      <p className="text-center text-[#0A0D12] font-jakarta">
         {contractAddress.slice(0, 6)}.....{contractAddress.slice(-6)}
       </p>
-    </button>
+    </Button>
   );
 };
 
 const SmartContractInformation = () => {
+  // TODO: Implement link opening functionality
+  const handleOpenLink = () => {
+    // Open relevant smart contract information link
+  };
+
   return (
-    <button className="flex flex-row gap-[0.333vw] px-[0.667vw] hover:cursor-pointer active:cursor-pointer border-1 border-[#D5D7DA] rounded-[0.208vw] w-[10.833vw] aspect-[156/36] justify-between items-center">
-      <p className="text-center text-[#0A0D12] font-jakarta text-[#0A0D12] text-[0.833vw] leading-[1.25vw] bg">
+    <Button
+      variant="outline" // Use outline variant
+      size="sm" // Use small size
+      className="flex flex-row gap-[0.333vw] px-[0.667vw] w-[10.833vw] aspect-[156/36] justify-between items-center text-[0.833vw]" // Apply custom classes
+      onClick={handleOpenLink}
+    >
+      <p className="text-center text-[#0A0D12] font-jakarta leading-[1.25vw]">
         Gak Tau ini apa
       </p>
-      <IoIosOpen className="w-[1.25vw] aspect-square text-[#0A0D12]" />
-    </button>
+      <ExternalLink className="w-[1.25vw] aspect-square text-[#0A0D12]" />{" "}
+      {/* Use Lucide ExternalLink icon */}
+    </Button>
   );
 };
 
@@ -89,12 +118,8 @@ const ContractChecklist = ({ steps }: ContractChecklistProps) => {
           Contract Checklist
         </p>
         {/* Progress Bar */}
-        <div className="w-full h-2 bg-gray-200 rounded-full">
-          <div
-            className="h-full bg-[#31006E] rounded-full transition-all duration-300"
-            style={{ width: `${progressPercentage}%` }}
-          />
-        </div>
+        <Progress value={progressPercentage} className="w-full h-2" />{" "}
+        {/* Use shadcn Progress */}
         <p className="text-[0.833vw] text-[#905AD4] font-jakarta">
           {completedCount}/{steps.length} tasks completed
         </p>
@@ -102,17 +127,26 @@ const ContractChecklist = ({ steps }: ContractChecklistProps) => {
           {steps.map((step) => (
             <div
               key={step.id}
-              className={`flex flex-row gap-[0.333vw] items-center ${step.completed ? "text-[#31006E]" : "text-[#C5C4C8]"}`}
+              className={cn(
+                "flex flex-row gap-[0.333vw] items-center",
+                step.completed ? "text-[#31006E]" : "text-[#C5C4C8]"
+              )}
             >
               <div
-                className={`flex w-[1.111vw] aspect-square justify-center items-center rounded-full border-1 border-[#E9EAEB] ${step.completed ? "bg-transparent" : "bg-transparent"}`}
+                className={cn(
+                  "flex w-[1.111vw] aspect-square justify-center items-center rounded-full border-1 border-[#E9EAEB]",
+                  step.completed ? "bg-transparent" : "bg-transparent" // Consider if a different background is needed for completed
+                )}
               >
                 {step.completed && (
-                  <HiCheck className="w-[1.25vw] aspect-square text-[#039855]" />
+                  <Check className="w-[1.25vw] aspect-square text-[#039855]" /> // Use Lucide Check icon
                 )}
               </div>
               <p
-                className={`text-[0.972vw] font-jakarta ${step.completed ? "text-[#039855]" : "text-black"}`}
+                className={cn(
+                  "text-[0.972vw] font-jakarta",
+                  step.completed ? "text-[#039855]" : "text-black"
+                )}
               >
                 {step.label}
               </p>
@@ -125,6 +159,7 @@ const ContractChecklist = ({ steps }: ContractChecklistProps) => {
 };
 
 const AfterDeploy = ({ contractAddress = "0x123" }: AfterDeployProps) => {
+  const { address: account } = useAccount(); // Get connected account
   const steps = [
     { id: 1, label: "Contract Deployment", completed: true },
     { id: 2, label: "Verify", completed: false },
@@ -146,7 +181,12 @@ const AfterDeploy = ({ contractAddress = "0x123" }: AfterDeployProps) => {
       </div>
       <AnalyticsCard />
       <RegisteredOperators />
-      <TokenCard />
+      {/* Pass contractAddress and account to TokenCard */}
+      <TokenCard
+        contractAddress={contractAddress}
+        owner={account || "0x0"}
+      />{" "}
+      {/* Pass account as owner, use 0x0 if not connected */}
     </div>
   );
 };

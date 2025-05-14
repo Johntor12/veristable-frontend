@@ -1,8 +1,9 @@
 "use client";
 import React from "react";
-import Button from "../Button";
+import Button from "../Button"; // Assuming this is the refactored shadcn Button
 import Image from "next/image";
 import Hero_Image from "../../assets/hero_image.png";
+import { cn } from "@/lib/utils"; // Import cn
 
 const Hero = () => {
   return (
@@ -19,18 +20,20 @@ const Hero = () => {
             <div className="col-span-5 flex flex-row gap-[1.556vw]">
               <div className="w-[55%]">
                 <Button
-                  text="Get Started"
                   fullW={true}
-                  customClass="rounded-[0.694vw]"
-                />
+                  className="rounded-[0.694vw]" // Use className
+                >
+                  Get Started {/* Use children */}
+                </Button>
               </div>
               <div className="w-[40%]">
                 <Button
-                  variant="secondary"
-                  text="Explore"
+                  variant="outline" // Use shadcn outline variant
                   fullW={true}
-                  customClass="border"
-                />
+                  className="border" // Use className
+                >
+                  Explore {/* Use children */}
+                </Button>
               </div>
             </div>
           </div>
