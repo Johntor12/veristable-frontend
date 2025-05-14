@@ -7,11 +7,11 @@ type TotalAssetsData = {
 };
 
 const TotalAssetsSection = ({
-  assetSupply = 100000000,
-  protocolReserve = 100000000,
+  assetSupply = 600000,
+  protocolReserve = 737845,
   verifiablity = 100,
   verificationInterval = "Real-time",
-  colleteralRatio = 100.3,
+  colleteralRatio = 100,
 }: TotalAssetsData) => {
   return (
     <>
@@ -77,7 +77,7 @@ const TotalAssetsSection = ({
                 Colleteral Ratio
               </p>
               <p className="font-jakarta font-bold text-[1.528vw]">
-                {colleteralRatio}
+                {colleteralRatio}%
               </p>
               <p className="font-jakarta text-[#717680] text-[0.833vw]">
                 Assets are overcollateralized to ensure protocol solvency and
