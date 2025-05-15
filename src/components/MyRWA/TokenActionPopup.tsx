@@ -66,8 +66,8 @@ interface TokenActionPopupProps {
   isOpen: boolean;
   onClose: () => void;
   token: Token;
-  walletClient: string;
-  account: string | `0x${string}`;
+  walletClient: any;
+  account: string | undefined;
 }
 
 export default function TokenActionPopup({
@@ -111,13 +111,9 @@ export default function TokenActionPopup({
         });
       if (error)
         throw new Error(`Failed to save to Supabase: ${error.message}`);
-    } catch (err: unknown) {
+    } catch (err: any) {
       console.error("Error saving to Supabase:", err);
-      if (err instanceof Error) {
-        setErrorMessage(`Failed to save to database: ${err.message}`);
-      } else {
-        setErrorMessage("Failed to save to database: Unknown error");
-      }
+      setErrorMessage(`Failed to save to database: ${err.message}`);
     }
   };
 
@@ -195,11 +191,9 @@ export default function TokenActionPopup({
         symbol,
         decimals,
       });
-    } catch (err: unknown) {
+    } catch (err: any) {
       console.error("Error fetching token info:", err);
-      if (err instanceof Error) {
-        setErrorMessage(`Failed to load token information: ${err.message}`);
-      }
+      setErrorMessage(`Failed to load token information: ${err.message}`);
     } finally {
       setIsLoading(false);
     }
@@ -269,11 +263,9 @@ export default function TokenActionPopup({
       setStakeAmount("");
       alert("ETH successfully staked!");
       await fetchTokenInfo();
-    } catch (err: unknown) {
+    } catch (err: any) {
       console.error("Error staking ETH:", err);
-      if (err instanceof Error) {
-        setErrorMessage(`Failed to stake: ${err.message}`);
-      }
+      setErrorMessage(`Failed to stake: ${err.reason || err.message}`);
     } finally {
       setIsLoading(false);
     }
@@ -354,11 +346,9 @@ export default function TokenActionPopup({
       setUnstakeAmount("");
       alert("ETH successfully unstaked!");
       await fetchTokenInfo();
-    } catch (err: unknown) {
+    } catch (err: any) {
       console.error("Error unstaking ETH:", err);
-      if (err instanceof Error) {
-        setErrorMessage(`Failed to unstake: ${err.message}`);
-      }
+      setErrorMessage(`Failed to unstake: ${err.reason || err.message}`);
     } finally {
       setIsLoading(false);
     }
@@ -403,7 +393,7 @@ export default function TokenActionPopup({
       }
 
       const userStake = await avs.tokenStakes(token.address, account);
-      if (userStake === 0) {
+      if (userStake === 0n) {
         setErrorMessage("No active stake found. Cannot claim rewards.");
         return;
       }
@@ -433,11 +423,9 @@ export default function TokenActionPopup({
 
       alert("Rewards successfully claimed!");
       await fetchTokenInfo();
-    } catch (err: unknown) {
+    } catch (err: any) {
       console.error("Error claiming rewards:", err);
-      if (err instanceof Error) {
-        setErrorMessage(`Failed to claim rewards: ${err.message}`);
-      }
+      setErrorMessage(`Failed to claim rewards: ${err.reason || err.message}`);
     } finally {
       setIsLoading(false);
     }
@@ -510,11 +498,11 @@ export default function TokenActionPopup({
       setDepositRewardAmount("");
       alert("Rewards successfully distributed!");
       await fetchTokenInfo();
-    } catch (err: unknown) {
+    } catch (err: any) {
       console.error("Error distributing rewards:", err);
-      if (err instanceof Error) {
-        setErrorMessage(`Failed to distribute rewards: ${err.message}`);
-      }
+      setErrorMessage(
+        `Failed to distribute rewards: ${err.reason || err.message}`
+      );
     } finally {
       setIsLoading(false);
     }
@@ -522,7 +510,7 @@ export default function TokenActionPopup({
 
   useEffect(() => {
     if (isOpen) fetchTokenInfo();
-  }, [isOpen, fetchTokenInfo]);
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
