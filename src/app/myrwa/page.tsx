@@ -47,7 +47,7 @@ const MyRWA = () => {
           (item: RealEstateItem) => ({
             team: `Owner: ${item.owner.slice(0, 6)}...${item.owner.slice(-4)}`,
             title: item.name,
-            image: item.image?.[0] || "/images/MyRWA_Dummy_Hero_Image.png",
+            image: item.image?.[0] || "/images/hero-myrwa-image.png",
             description: item.description || "No description available",
             address: item.address,
           })

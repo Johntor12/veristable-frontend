@@ -16,7 +16,7 @@ const TeamCard = ({
 }: TeamCardProps) => {
   return (
     <div
-      className={`flex flex-col rounded-[0.694vw] border-1 border-[#D5D7DA] gap-[1.111svw] ${customClass}`}
+      className={`flex flex-col rounded-[0.694vw] border-1 gap-[1.111svw] ${customClass}`}
     >
       <div className="flex flex-col justify-between p-4 gap-[1.111vw]">
         <div className="flex flex-col gap-[0.139vw] font-jakarta">

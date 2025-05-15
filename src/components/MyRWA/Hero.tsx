@@ -65,7 +65,7 @@ const HeroRWA = ({
 
       <div className="lg:-translate-x-[5.5vw] lg:-translate-y-[1vw]">
         <Image
-          src="/images/MyRWA_Dummy_Hero_Image.png"
+          src="/images/hero-myrwa-image.png"
           alt="Dummy Hero"
           width={600}
           height={537.84}

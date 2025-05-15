@@ -91,7 +91,7 @@ const TotalAssetsSection = ({
             </p>
             <p className="font-jakarta font-bold text-[1.528vw]">
               {loading ? "Loading..." : protocolReserve.toLocaleString("en-us")}
-              USDc
+              USDC
             </p>
             <p className="font-jakarta text-[#717680] text-[0.833vw]">
               Reserves backing all tokenized assets, held in stable and audited

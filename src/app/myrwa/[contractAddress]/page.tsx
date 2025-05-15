@@ -86,63 +86,6 @@ type Step = {
   completed: boolean;
 };
 
-// Komponen ContractChecklist
-const ContractChecklist = ({ steps }: { steps: Step[] }) => {
-  const completedCount = useMemo(() => {
-    return steps.filter((step) => step.completed).length;
-  }, [steps]);
-
-  const progressPercentage = useMemo(() => {
-    return (completedCount / steps.length) * 100;
-  }, [completedCount, steps.length]);
-
-  return (
-    <div className="flex flex-col items-center p-[1.994vw] w-[51.667vw] aspect-[744/259] rounded-[0.694vw] border-2 border-[#E9EAEB] gap-[1.111vw]">
-      <div className="flex flex-col w-full font-jakarta gap-[0.833vw]">
-        <p className="font-jakarta text-[1.528vw] text-black font-bold leading-[2.292vw]">
-          Contract Checklist
-        </p>
-        <div className="w-full h-2 bg-gray-200 rounded-full">
-          <div
-            className="h-full bg-[#31006E] rounded-full transition-all duration-300"
-            style={{ width: `${progressPercentage}%` }}
-          />
-        </div>
-        <p className="text-[0.833vw] text-[#905AD4] font-jakarta">
-          {completedCount}/{steps.length} tasks completed
-        </p>
-        <div className="flex flex-col justify-start gap-[0.667vw]">
-          {steps.map((step) => (
-            <div
-              key={step.id}
-              className={`flex flex-row gap-[0.333vw] items-center ${
-                step.completed ? "text-[#31006E]" : "text-[#C5C4C8]"
-              }`}
-            >
-              <div
-                className={`flex w-[1.111vw] aspect-square justify-center items-center rounded-full border-1 border-[#E9EAEB] ${
-                  step.completed ? "bg-transparent" : "bg-transparent"
-                }`}
-              >
-                {step.completed && (
-                  <HiCheck className="w-[1.25vw] aspect-square text-[#039855]" />
-                )}
-              </div>
-              <p
-                className={`text-[0.972vw] font-jakarta ${
-                  step.completed ? "text-[#039855]" : "text-black"
-                }`}
-              >
-                {step.label}
-              </p>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-};
-
 // Halaman Detail RWA
 const RWADetailPage = () => {
   const { contractAddress } = useParams();
@@ -219,14 +162,13 @@ const RWADetailPage = () => {
     <div className="min-h-screen w-full bg-white pt-[6vw] px-4 lg:px-0 font-jakarta">
       <section className="w-[90%] mx-auto py-12 flex flex-col justify-center items-center gap-[1vw]">
         <RWAInformation data={rwaData} />
-        <ContractChecklist steps={steps} />
         <TeamCard
-          team="Real Estate"
+          team={rwaData.name}
           description={
             rwaData.description || "Long-term value from physical properties."
           }
-          createdAt={`by ${rwaData.owner.slice(0, 6)}...${rwaData.owner.slice(-4)}`}
-          customClass="w-[18.75vw] aspect-[360/171]"
+          createdAt={`Owner: ${rwaData.owner}`}
+          customClass="w-[51.667vw] aspect-[360/50]"
         />
         <AnalyticsCard />
         <TokenCard

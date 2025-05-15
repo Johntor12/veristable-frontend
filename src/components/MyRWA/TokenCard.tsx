@@ -616,7 +616,7 @@ const TokenCard = ({
 
   return (
     <>
-      <div className="flex flex-col bg-transparent p-[1.994vw] w-[51.667vw] aspect-[744/262] rounded-[0.694vw] border-2 border-[#D5D7DA] gap-[1.833vw]">
+      <div className="flex flex-col bg-transparent p-[1.994vw] w-[51.667vw] aspect-[744/262] rounded-[0.694vw] border-1 gap-[1.833vw]">
         <div className="flex flex-row justify-between pb-[0.833vw] pr-[1.994vw] border-b-1 border-[#D5D7DA]">
           <div className="font-jakarta font-bold text-[1.528vw] leading-[2.292vw] text-black">
             Tokens

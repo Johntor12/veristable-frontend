@@ -14,11 +14,14 @@ const HeroDashboard = () => {
           </p>
         </div>
         <div className="relative flex w-[20.486vw] aspect-[295/266]">
-          <Image
-            src={"/images/dashboard/hero-dashboard-image.png"}
-            fill
-            alt="Hero Dashboard image"
-          />
+          <div className="lg:-translate-x-[5.5vw] lg:-translate-y-[1vw]">
+            <Image
+              src="/images/hero-dashboard-image.png"
+              alt="Dummy Hero"
+              width={600}
+              height={537.84}
+            />
+          </div>
         </div>
       </div>
     </>
