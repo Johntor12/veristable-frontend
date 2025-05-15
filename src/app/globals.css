@@ -1,13 +1,19 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap");
 @import "tailwindcss";
 
 @layer base {
-  html, body {
-    font-family: 'Plus Jakarta Sans', sans-serif;
+  html,
+  body {
+    font-family: "Plus Jakarta Sans", sans-serif;
     @apply bg-white text-black;
   }
 
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     @apply font-bold;
   }
 }
@@ -23,9 +29,8 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, 'Plus Jakarta Sans', sans-serif;
+  font-family: "Plus Jakarta Sans", Arial, Helvetica, sans-serif;
 }
-
 
 :root {
   --background: #ffffff;
@@ -45,4 +50,3 @@ body {
     --foreground: #ededed;
   }
 }
-

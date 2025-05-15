@@ -3,106 +3,51 @@
 import Logo from "../assets/Logo_Veristable.png";
 import Image from "next/image";
 import Link from "next/link";
-// import Button from "./Button";
-import { ConnectButton } from "@rainbow-me/rainbowkit";
+import { ConnectButton } from "@xellar/kit";
 
 const Navbar = () => {
   return (
-    <div className="relative">
-      <div className="absolute flex flex-row w-full h-[4.667vw] justify-center items-center font-jakarta">
-        <div className="flex flex-row justify-between items-center w-[90vw] h-10">
-          <div className="flex flex-row items-center h-full text-black">
-            <Image
-              src={Logo}
-              width={40}
-              className="aspect-square"
-              alt="Logo Veristable"
-            />
-            <p className="font-jakarta text-[1.25vw] font-bold">Veristable</p>
-          </div>
-          <nav className="grid grid-cols-13 justify-items-end items-center h-full gap-[2.667vw] text-black">
-            <Link
-              href="/explore-rwa"
-              className="col-span-3 font-jakarta text-[1.111vw]"
-            >
-              ExploreRWA
-            </Link>
-            <Link
-              href="/myrwa"
-              className="col-span-3 font-jakarta text-[1.111vw]"
-            >
-              MyRWA
-            </Link>
-            <Link
-              href="/dashboard"
-              className="col-span-3 font-jakarta text-[1.111vw]"
-            >
-              Dashboard
-            </Link>
-            <div className="col-span-4 font-jakarta text-[1.111vw]">
-              <ConnectButton
-                chainStatus="icon"
-                accountStatus={{
-                  smallScreen: "avatar",
-                  largeScreen: "full",
-                }}
-                label="Connect Wallet"
-              />
-            </div>
-          </nav>
+    <header className="fixed top-0 left-0 right-0 z-50 bg-white shadow-sm">
+      <div className="container mx-auto px-4 py-3 flex items-center justify-between">
+        {/* Logo Section */}
+        <div className="flex items-center space-x-3">
+          <Image
+            src={Logo}
+            width={40}
+            height={40}
+            alt="Veristable Logo"
+            className="object-contain"
+          />
+          <span className="font-jakarta font-bold text-lg md:text-xl text-black">
+            Veristable
+          </span>
         </div>
+
+        {/* Navigation Section */}
+        <nav className="flex items-center space-x-6 md:space-x-8">
+          <Link
+            href="/explore-rwa"
+            className="font-jakarta text-sm md:text-base text-black hover:text-blue-600 transition-colors"
+          >
+            ExploreRWA
+          </Link>
+          <Link
+            href="/myrwa"
+            className="font-jakarta text-sm md:text-base text-black hover:text-blue-600 transition-colors"
+          >
+            MyRWA
+          </Link>
+          <Link
+            href="/dashboard"
+            className="font-jakarta text-sm md:text-base text-black hover:text-blue-600 transition-colors"
+          >
+            Dashboard
+          </Link>
+          <ConnectButton />
+        </nav>
       </div>
-    </div>
+    </header>
   );
-
-  // <header className="fixed top-0 z-50 w-full bg-white shadow-sm">
-  //   <div className="container mx-auto flex h-16 items-center justify-between px-4 md:px-6">
-  {
-    /* Logo Section */
-  }
-  // <div className="flex items-center gap-2">
-  //   <Image
-  //     src={Logo}
-  //     width={40}
-  //     height={40}
-  //     alt="Veristable Logo"
-  //     className="h-10 w-10"
-  //     priority
-  //   />
-  //   <span className="font-jakarta text-lg font-bold text-gray-900 md:text-xl">
-  //     Veristable
-  //   </span>
-  // </div>
-
-  {
-    /* Navigation Links */
-  }
-  // <nav className="hidden items-center gap-6 font-jakarta text-sm text-gray-900 md:flex md:text-base">
-  //   <a href="/explore-rwa" className="hover:text-purple-600">
-  //     ExploreRWA
-  //   </a>
-  //   <a href="/myrwa" className="hover:text-purple-600">
-  //     MyRWA
-  //   </a>
-  //   <a href="/dashboard" className="hover:text-purple-600">
-  //     Dashboard
-  //   </a>
-  // </nav>
-
-  {
-    /* Connect Wallet Button */
-  }
-  // <div className="flex items-center">
-  //   <ConnectButton
-  //     chainStatus="icon"
-  //     accountStatus={{
-  //       smallScreen: "avatar",
-  //       largeScreen: "full",
-  //     }}
-  //   />
-  // </div>
-  //   </div>
-  // </header>
 };
 
 export default Navbar;

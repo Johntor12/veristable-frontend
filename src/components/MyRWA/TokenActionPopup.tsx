@@ -393,7 +393,7 @@ export default function TokenActionPopup({
       }
 
       const userStake = await avs.tokenStakes(token.address, account);
-      if (userStake === 0n) {
+      if (userStake === 0) {
         setErrorMessage("No active stake found. Cannot claim rewards.");
         return;
       }
@@ -693,7 +693,7 @@ export default function TokenActionPopup({
                     placeholder="Enter amount to stake"
                     value={stakeAmount}
                     onChange={(e) => setStakeAmount(e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="w-full px-4 py-2 border text-black border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
                     disabled={isLoading}
                   />
                   <div className="flex justify-end">
@@ -725,7 +725,7 @@ export default function TokenActionPopup({
                     placeholder="Enter amount to unstake"
                     value={unstakeAmount}
                     onChange={(e) => setUnstakeAmount(e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="w-full px-4 py-2 border text-black border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
                     disabled={isLoading}
                   />
                   <div className="flex justify-end">
@@ -767,7 +767,7 @@ export default function TokenActionPopup({
                     placeholder="Enter amount to distribute"
                     value={depositRewardAmount}
                     onChange={(e) => setDepositRewardAmount(e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="w-full px-4 py-2 border text-black border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
                     disabled={isLoading}
                   />
                   <div className="flex justify-end">

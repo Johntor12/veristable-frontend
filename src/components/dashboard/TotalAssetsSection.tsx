@@ -1,18 +1,74 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { createClient } from "@supabase/supabase-js";
+
+// Supabase Client Setup
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
+const supabase = createClient(supabaseUrl, supabaseKey);
+
 type TotalAssetsData = {
-  assetSupply?: number;
-  protocolReserve?: number;
   verifiablity?: number;
   verificationInterval?: string;
-  colleteralRatio?: number;
 };
 
 const TotalAssetsSection = ({
-  assetSupply = 600000,
-  protocolReserve = 737845,
   verifiablity = 100,
   verificationInterval = "Real-time",
-  colleteralRatio = 100,
 }: TotalAssetsData) => {
+  const [assetSupply, setAssetSupply] = useState<number>(0);
+  const [protocolReserve, setProtocolReserve] = useState<number>(0);
+  const [colleteralRatio, setColleteralRatio] = useState<number>(0);
+  const [loading, setLoading] = useState(true);
+
+  const fetchAssetData = async () => {
+    setLoading(true);
+    try {
+      const { data: supabaseData, error } = await supabase
+        .from("real_estate")
+        .select("totalSupply, reserve");
+
+      if (error) {
+        console.error("Supabase error:", error);
+        setAssetSupply(0);
+        setProtocolReserve(0);
+        setColleteralRatio(0);
+        return;
+      }
+
+      let totalAssetSupply = 0;
+      let totalProtocolReserve = 0;
+
+      if (supabaseData) {
+        supabaseData.forEach((item) => {
+          totalAssetSupply += Number(item.totalSupply || 0);
+          totalProtocolReserve += Number(item.reserve || 0);
+        });
+      }
+
+      setAssetSupply(totalAssetSupply);
+      setProtocolReserve(totalProtocolReserve);
+
+      if (totalProtocolReserve > 0) {
+        setColleteralRatio((totalProtocolReserve / totalAssetSupply) * 100);
+      } else {
+        setColleteralRatio(0);
+      }
+    } catch (err) {
+      console.error("Error fetching asset data:", err);
+      setAssetSupply(0);
+      setProtocolReserve(0);
+      setColleteralRatio(0);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchAssetData();
+  }, []);
+
   return (
     <>
       <div className="flex flex-col w-[78.264vw] rounded-[0.694vw]">
@@ -22,7 +78,7 @@ const TotalAssetsSection = ({
               Total Assets Supply
             </p>
             <p className="font-jakarta font-bold text-[1.528vw]">
-              ${assetSupply.toLocaleString("en-us")}
+              ${loading ? "Loading..." : assetSupply.toLocaleString("en-us")}
             </p>
             <p className="font-jakarta text-[#717680] text-[0.833vw]">
               Total value of tokenized real-world assets currently circulating
@@ -34,7 +90,8 @@ const TotalAssetsSection = ({
               Total Protocol Reserves
             </p>
             <p className="font-jakarta font-bold text-[1.528vw]">
-              {protocolReserve.toLocaleString("en-us")}USDc
+              {loading ? "Loading..." : protocolReserve.toLocaleString("en-us")}
+              USDc
             </p>
             <p className="font-jakarta text-[#717680] text-[0.833vw]">
               Reserves backing all tokenized assets, held in stable and audited
@@ -77,7 +134,7 @@ const TotalAssetsSection = ({
                 Colleteral Ratio
               </p>
               <p className="font-jakarta font-bold text-[1.528vw]">
-                {colleteralRatio}%
+                {loading ? "Loading..." : colleteralRatio.toFixed(2)}%
               </p>
               <p className="font-jakarta text-[#717680] text-[0.833vw]">
                 Assets are overcollateralized to ensure protocol solvency and
