@@ -33,7 +33,7 @@ const RWACard = ({
   };
 
   return (
-    <div className="flex flex-col rounded-[0.694vw] border-1 border-[#D5D7DA] w-[25vw] aspect-[360/283]">
+    <div className="flex flex-col rounded-[0.694vw] border-1 border-[#D5D7DA]">
       <div className="relative w-full aspect-[360/136]">
         <Image
           src={image}
@@ -110,7 +110,7 @@ const ProjectRecent = ({
         </h3>
         <p className="text-[0.972vw] text-[#535862]">{descSection}</p>
       </div>
-      <div className="flex flex-row gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {rwaData.map((item, index) => (
           <RWACard
             key={index}

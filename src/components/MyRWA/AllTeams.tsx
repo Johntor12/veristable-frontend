@@ -42,7 +42,7 @@ const AllTeams = ({
         </h3>
         <p className="text-[0.972vw] text-[#535862]">{descSection}</p>
       </div>
-      <div className="flex flex-row gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {teamData.map((item, index) => (
           <TeamCard
             key={index}

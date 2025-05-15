@@ -82,7 +82,8 @@ const OneClick = () => {
       </div>
 
       {/* Steps Section */}
-      <div className="grid grid-cols-5 w-full max-w-6xl gap-x-[2vw] mt-[1.5vw]">
+      <div className="grid grid-cols-5 w-full max-w-6xl gap-x-[1.5vw] mt-[1.5vw] relative">
+        <div className="absolute top-[1.4vw] left-1/2 transform -translate-x-1/2 w-4/5 h-[0.2vw] bg-[#712DC5] z-0"></div>
         {[
           { step: 1, title: "Connect Wallet" },
           { step: 2, title: "Explore RWA" },
@@ -94,7 +95,7 @@ const OneClick = () => {
             key={item.step}
             className="flex flex-col items-center gap-y-[1vw]"
           >
-            <div className="w-[2.8vw] aspect-square rounded-full border-[#712DC5] border-2 flex justify-center items-center text-[#420092] font-bold text-[1.1vw]">
+            <div className="w-[2.8vw] aspect-square rounded-full border-[#712DC5] border flex justify-center items-center text-[#420092] font-bold text-[1.1vw] z-10 bg-white">
               {item.step}
             </div>
             <p className="font-jakarta font-semibold text-[1.1vw] text-[#420092] text-center tracking-normal">

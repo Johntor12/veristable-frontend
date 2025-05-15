@@ -51,7 +51,7 @@ export default function ReservesChart({
         </p>
       </div>
 
-      <div className="w-[78.264vw] aspect-[1127/387]">
+      <div className="w-[78.264vw] text-black aspect-[1127/387]">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart
             data={data}
