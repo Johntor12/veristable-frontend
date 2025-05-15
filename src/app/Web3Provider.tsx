@@ -5,7 +5,7 @@ import React from "react";
 import { type Config, WagmiProvider } from "wagmi";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { XellarKitProvider, defaultConfig } from "@xellar/kit";
-import { liskSepolia } from "viem/chains";
+import { liskSepolia, lisk } from "viem/chains";
 
 const walletConnectProjectId =
   process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID;
@@ -39,7 +39,7 @@ const config = defaultConfig({
   walletConnectProjectId,
   xellarAppId,
   xellarEnv: "sandbox",
-  chains: [liskSepolia, pharosDevnet],
+  chains: [lisk, liskSepolia, pharosDevnet],
 }) as Config;
 
 const queryClient = new QueryClient();

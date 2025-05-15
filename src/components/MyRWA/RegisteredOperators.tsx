@@ -83,7 +83,7 @@ const RegisteredOperators = () => {
   );
 
   return (
-    <div className="bg-white p-6 rounded-xl shadow-md w-full max-w-5xl mx-auto border border-gray-200">
+    <div className="bg-white p-6 rounded-xl shadow-md w-[78.264vw] border border-gray-200">
       <h2 className="text-xl font-bold text-gray-800 mb-4">
         Token Restake List
       </h2>
