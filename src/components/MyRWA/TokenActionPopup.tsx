@@ -3,6 +3,8 @@ import { IoClose } from "react-icons/io5";
 import { useState, useEffect } from "react";
 import { ethers } from "ethers";
 import { createClient } from "@supabase/supabase-js";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 // Supabase Configuration
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
@@ -261,7 +263,7 @@ export default function TokenActionPopup({
       await saveToSupabase(totalSupply, reserveBalance, restake);
 
       setStakeAmount("");
-      alert("ETH successfully staked!");
+      toast.success("ETH successfully staked!");
       await fetchTokenInfo();
     } catch (err: any) {
       console.error("Error staking ETH:", err);
@@ -344,7 +346,7 @@ export default function TokenActionPopup({
       await saveToSupabase(totalSupply, reserveBalance, restake);
 
       setUnstakeAmount("");
-      alert("ETH successfully unstaked!");
+      toast.success("ETH successfully unstaked!");
       await fetchTokenInfo();
     } catch (err: any) {
       console.error("Error unstaking ETH:", err);
@@ -421,7 +423,7 @@ export default function TokenActionPopup({
 
       await saveToSupabase(totalSupply, reserveBalance, restake);
 
-      alert("Rewards successfully claimed!");
+      toast.success("Rewards successfully claimed!");
       await fetchTokenInfo();
     } catch (err: any) {
       console.error("Error claiming rewards:", err);
@@ -496,7 +498,7 @@ export default function TokenActionPopup({
       await saveToSupabase(totalSupply, reserveBalance, restake);
 
       setDepositRewardAmount("");
-      alert("Rewards successfully distributed!");
+      toast.success("Rewards successfully distributed!");
       await fetchTokenInfo();
     } catch (err: any) {
       console.error("Error distributing rewards:", err);
@@ -516,6 +518,7 @@ export default function TokenActionPopup({
 
   return (
     <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50">
+      <ToastContainer />
       <div className="bg-white rounded-lg w-full max-w-xl max-h-[90vh] overflow-y-auto p-6 shadow-xl relative border border-gray-200">
         <button
           onClick={onClose}

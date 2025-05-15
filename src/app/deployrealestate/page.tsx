@@ -6,6 +6,8 @@ import Dropdown from "@/components/Dropdown";
 import { useAccount, useWalletClient } from "wagmi";
 import { ethers } from "ethers";
 import { createClient } from "@supabase/supabase-js";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 // Supabase Client Setup
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
@@ -103,7 +105,9 @@ export default function DeployPage() {
   const createTokenAndInsert = async () => {
     try {
       if (!walletClient || !account || !tokenName || !tokenSymbol) {
-        alert("Please connect your wallet and fill in all required fields!");
+        toast.error(
+          "Please connect your wallet and fill in all required fields!"
+        );
         return;
       }
 
@@ -184,12 +188,12 @@ export default function DeployPage() {
       setDescription("");
       setLocation("");
       setSelectedImages([]);
-      alert("Token created and saved successfully!");
+      toast.success("Token created and saved successfully!");
     } catch (error) {
       if (error instanceof Error) {
-        alert(`Error: ${error.message || "Unknown error"}`);
+        toast.error(`Error: ${error.message || "Unknown error"}`);
       } else {
-        alert("An unknown error occurred");
+        toast.error("An unknown error occurred");
       }
     } finally {
       setIsLoading(false);
@@ -205,6 +209,7 @@ export default function DeployPage() {
 
   return (
     <div className="min-h-screen bg-white pt-16 px-4 font-jakarta">
+      <ToastContainer />
       <div className="max-w-6xl mx-auto py-10">
         {/* Back Button */}
         <div

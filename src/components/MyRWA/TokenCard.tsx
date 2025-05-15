@@ -11,6 +11,8 @@ import TokenPopup from "./TokenPopup";
 import { useAccount, useWalletClient } from "wagmi";
 import { ethers } from "ethers";
 import { createClient } from "@supabase/supabase-js";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 // Supabase Configuration
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
@@ -307,12 +309,12 @@ const TokenCard = ({
   // Fungsi untuk mint token
   const handleMint = async (amount: number) => {
     if (!walletClient || !account) {
-      setErrorMessage("Please connect your wallet!");
+      toast.error("Please connect your wallet!");
       return;
     }
 
     if (amount <= 0 || isNaN(amount)) {
-      setErrorMessage("Amount must be greater than 0");
+      toast.error("Amount must be greater than 0");
       return;
     }
 
@@ -331,7 +333,7 @@ const TokenCard = ({
       // Validasi bahwa hanya owner yang bisa mint
       const contractOwner = await contract.owner();
       if (contractOwner.toLowerCase() !== account.toLowerCase()) {
-        setErrorMessage("Only the contract owner can mint tokens");
+        toast.error("Only the contract owner can mint tokens");
         return;
       }
 
@@ -363,7 +365,7 @@ const TokenCard = ({
       await saveToSupabase(newTotalSupply, newReserveBalance);
 
       setErrorMessage(null);
-      alert(`Successfully minted ${amount} ${symbol}!`);
+      toast.success(`Successfully minted ${amount} ${symbol}!`);
     } catch (err: unknown) {
       console.error("Error minting token:", err);
       if (err instanceof Error) {
@@ -379,17 +381,17 @@ const TokenCard = ({
   // Fungsi untuk burn token
   const handleBurn = async (amount: number) => {
     if (!walletClient || !account) {
-      setErrorMessage("Please connect your wallet!");
+      toast.error("Please connect your wallet!");
       return;
     }
 
     if (amount <= 0 || isNaN(amount)) {
-      setErrorMessage("Amount must be greater than 0");
+      toast.error("Amount must be greater than 0");
       return;
     }
 
     if (amount > ownedByYou) {
-      setErrorMessage("Cannot burn more tokens than you own");
+      toast.error("Cannot burn more tokens than you own");
       return;
     }
 
@@ -408,7 +410,7 @@ const TokenCard = ({
       // Validasi bahwa hanya owner yang bisa burn
       const contractOwner = await contract.owner();
       if (contractOwner.toLowerCase() !== account.toLowerCase()) {
-        setErrorMessage("Only the contract owner can burn tokens");
+        toast.error("Only the contract owner can burn tokens");
         return;
       }
 
@@ -440,7 +442,7 @@ const TokenCard = ({
       await saveToSupabase(newTotalSupply, newReserveBalance);
 
       setErrorMessage(null);
-      alert(`Successfully burned ${amount} ${symbol}!`);
+      toast.success(`Successfully burned ${amount} ${symbol}!`);
     } catch (err: unknown) {
       console.error("Error burning token:", err);
       if (err instanceof Error) {
@@ -456,17 +458,17 @@ const TokenCard = ({
   // Fungsi untuk set reserve balance
   const handleReserve = async (amount: number) => {
     if (!walletClient || !account) {
-      setErrorMessage("Please connect your wallet!");
+      toast.error("Please connect your wallet!");
       return;
     }
 
     if (!ethers.isAddress(contractAddress)) {
-      setErrorMessage("Invalid token address.");
+      toast.error("Invalid token address.");
       return;
     }
 
     if (amount <= 0 || isNaN(amount)) {
-      setErrorMessage("Please enter a valid positive reserve amount.");
+      toast.error("Please enter a valid positive reserve amount.");
       return;
     }
 
@@ -518,7 +520,7 @@ const TokenCard = ({
       await saveToSupabase(newTotalSupply, newReserveBalance);
 
       setErrorMessage(null);
-      alert(`Successfully set reserve balance to ${amount} ${symbol}!`);
+      toast.success(`Successfully set reserve balance to ${amount} ${symbol}!`);
     } catch (err: unknown) {
       console.error("Error setting reserve balance:", err);
       if (err instanceof Error) {
@@ -569,12 +571,12 @@ const TokenCard = ({
     {
       label: <HiOutlinePaperAirplane className="text-[1.25vw]" />,
       text: "Airdrop",
-      onClick: () => alert("Airdrop not implemented yet"),
+      onClick: () => toast.info("Airdrop not implemented yet"),
     },
     {
       label: <HiOutlineShare className="text-[1.25vw]" />,
       text: "Share",
-      onClick: () => alert("Share not implemented yet"),
+      onClick: () => toast.info("Share not implemented yet"),
     },
     {
       label: <IoAdd className="text-[1.25vw]" />,
@@ -596,7 +598,7 @@ const TokenCard = ({
         </p>
         <button
           onClick={() =>
-            window.ethereum.request({ method: "eth_requestAccounts" })
+            (window as any).ethereum.request({ method: "eth_requestAccounts" })
           }
           className="bg-purple-700 text-white px-4 py-2 rounded hover:bg-purple-800 text-[0.833vw] font-jakarta w-[10vw]"
         >
@@ -616,6 +618,7 @@ const TokenCard = ({
 
   return (
     <>
+      <ToastContainer />
       <div className="flex flex-col bg-transparent p-[1.994vw] w-[51.667vw] aspect-[744/262] rounded-[0.694vw] border-1 gap-[1.833vw]">
         <div className="flex flex-row justify-between pb-[0.833vw] pr-[1.994vw] border-b-1 border-[#D5D7DA]">
           <div className="font-jakarta font-bold text-[1.528vw] leading-[2.292vw] text-black">
