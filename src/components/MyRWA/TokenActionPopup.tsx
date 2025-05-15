@@ -33,9 +33,9 @@ const VeristableAVSABI = [
   "function paused() external view returns (bool)",
 ];
 
-// Alamat Kontrak di Pharos Network
-const reserveAddress = "0xb080914D90A76EC677a9d288e9BF03B9a052769d";
-const veristableAVSAddress = "0xfDb408556Fb995C105Fb98dd4e682322d5Cf68b3";
+// Alamat Kontrak di Lisk Sepolia Network
+const reserveAddress = "0x8A34597c14F11743dA19a8D9Ff09866A211be089";
+const veristableAVSAddress = "0x1F113512858d23EC940846486A4800077CC42678";
 
 interface Token {
   id: number;

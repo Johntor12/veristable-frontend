@@ -40,8 +40,8 @@ const ReserveABI = [
   "function getLastUpdateTimestamp() external view returns (uint256)",
 ];
 
-// Alamat Kontrak di Pharos Network
-const reserveAddress = "0xb080914D90A76EC677a9d288e9BF03B9a052769d";
+// Alamat Kontrak di Lisk Sepolia Network
+const reserveAddress = "0x8A34597c14F11743dA19a8D9Ff09866A211be089";
 
 type TokenAction = {
   label: React.ReactNode;

@@ -13,7 +13,7 @@ const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 // Alamat Kontrak di Pharos Network
-const factoryAddress = "0x9C34c7d588C2db8f5f4626C5e8C6E51cffFDF9e1";
+const factoryAddress = "0x7b1803075FEe77b756aBfC2c450D83e1A934880c";
 
 // Interface untuk TokenFactory
 const TokenFactoryABI = [
@@ -28,19 +28,6 @@ interface Log {
     tokenAddress?: string;
   };
 }
-
-// Interface untuk parsed logs
-// interface ParsedLog {
-//   name: string;
-//   args: Record<string, unknown>;
-//   eventFragment: {
-//     name: string;
-//     inputs: Array<{
-//       name: string;
-//       type: string;
-//     }>;
-//   };
-// }
 
 const teams = [
   { label: "Veri Team", icon: "/icons/team.png" },
