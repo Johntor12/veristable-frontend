@@ -115,14 +115,14 @@ const TokenPopup = ({
 
       console.log(
         "Sending verify request to:",
-        // "http://localhost:3001/verify"
-        "https://veristable-render-cool-frog-1562.fly.dev/verify"
+        "http://localhost:3001/verify"
+        // "https://veristable-render-cool-frog-1562.fly.dev/verify"
       );
       console.log("Request body:", { token, RWASupply });
 
       const verifyResponse = await fetch(
-        // "http://localhost:3001/verify",
-        "https://veristable-render-cool-frog-1562.fly.dev/verify",
+        "http://localhost:3001/verify",
+        // "https://veristable-render-cool-frog-1562.fly.dev/verify",
         {
           method: "POST",
           headers: {

@@ -39,7 +39,7 @@ const config = defaultConfig({
   walletConnectProjectId,
   xellarAppId,
   xellarEnv: "sandbox",
-  chains: [lisk, liskSepolia, pharosDevnet],
+  chains: [lisk, liskSepolia],
 }) as Config;
 
 const queryClient = new QueryClient();

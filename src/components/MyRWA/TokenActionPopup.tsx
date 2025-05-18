@@ -184,11 +184,11 @@ export default function TokenActionPopup({
         totalSupply: `${parseFloat(ethers.formatUnits(totalSupplyRaw, decimals)).toFixed(2)} ${symbol}`,
         reserve: `${parseFloat(ethers.formatUnits(reserveBalanceRaw, decimals)).toFixed(2)} ${symbol}`,
         userBalance: `${parseFloat(ethers.formatUnits(balanceRaw, decimals)).toFixed(2)} ${symbol}`,
-        userStake: `${parseFloat(ethers.formatUnits(userStake, 18)).toFixed(4)} ETH`,
-        totalStaked: `${parseFloat(ethers.formatUnits(totalStaked, 18)).toFixed(4)} ETH`,
-        rewardsPool: `${parseFloat(ethers.formatUnits(rewardsPool, 18)).toFixed(4)} ETH`,
-        pendingRewards: `${parseFloat(ethers.formatUnits(pendingRewards, 18)).toFixed(4)} ETH`,
-        minStake: `${parseFloat(ethers.formatUnits(minStake, 18)).toFixed(4)} ETH`,
+        userStake: `${parseFloat(ethers.formatUnits(userStake, 18)).toFixed(4)} IDRX`,
+        totalStaked: `${parseFloat(ethers.formatUnits(totalStaked, 18)).toFixed(4)} IDRX`,
+        rewardsPool: `${parseFloat(ethers.formatUnits(rewardsPool, 18)).toFixed(4)} IDRX`,
+        pendingRewards: `${parseFloat(ethers.formatUnits(pendingRewards, 18)).toFixed(4)} IDRX`,
+        minStake: `${parseFloat(ethers.formatUnits(minStake, 18)).toFixed(4)} IDRX`,
         lastUpdate: new Date(Number(timestampBigInt) * 1000).toLocaleString(),
         symbol,
         decimals,
@@ -263,10 +263,10 @@ export default function TokenActionPopup({
       await saveToSupabase(totalSupply, reserveBalance, restake);
 
       setStakeAmount("");
-      toast.success("ETH successfully staked!");
+      toast.success("IDRX successfully staked!");
       await fetchTokenInfo();
     } catch (err: any) {
-      console.error("Error staking ETH:", err);
+      console.error("Error staking IDRX:", err);
       setErrorMessage(`Failed to stake: ${err.reason || err.message}`);
     } finally {
       setIsLoading(false);
@@ -346,10 +346,10 @@ export default function TokenActionPopup({
       await saveToSupabase(totalSupply, reserveBalance, restake);
 
       setUnstakeAmount("");
-      toast.success("ETH successfully unstaked!");
+      toast.success("IDRX successfully unstaked!");
       await fetchTokenInfo();
     } catch (err: any) {
-      console.error("Error unstaking ETH:", err);
+      console.error("Error unstaking IDRX:", err);
       setErrorMessage(`Failed to unstake: ${err.reason || err.message}`);
     } finally {
       setIsLoading(false);
@@ -686,7 +686,7 @@ export default function TokenActionPopup({
               {activeTab === "stake" && (
                 <div className="space-y-4">
                   <label className="block text-sm font-medium text-gray-500  text-gray-700">
-                    Amount to Stake (ETH){" "}
+                    Amount to Stake (IDRX){" "}
                     <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -709,7 +709,7 @@ export default function TokenActionPopup({
                       }
                       className="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors disabled:bg-green-300"
                     >
-                      {isLoading ? "Processing..." : "Stake ETH"}
+                      {isLoading ? "Processing..." : "Stake IDRX"}
                     </button>
                   </div>
                 </div>
@@ -718,7 +718,7 @@ export default function TokenActionPopup({
               {activeTab === "unstake" && (
                 <div className="space-y-4">
                   <label className="block text-sm font-medium text-gray-500  text-gray-700">
-                    Amount to Unstake (ETH){" "}
+                    Amount to Unstake (IDRX){" "}
                     <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -743,7 +743,7 @@ export default function TokenActionPopup({
                       }
                       className="px-6 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors disabled:bg-red-300"
                     >
-                      {isLoading ? "Processing..." : "Unstake ETH"}
+                      {isLoading ? "Processing..." : "Unstake IDRX"}
                     </button>
                   </div>
                 </div>
@@ -760,7 +760,7 @@ export default function TokenActionPopup({
                   </button>
 
                   <label className="block text-sm font-medium text-gray-500  text-gray-700">
-                    Amount to Distribute (ETH){" "}
+                    Amount to Distribute (IDRX){" "}
                     <span className="text-red-500">*</span>
                   </label>
                   <input
